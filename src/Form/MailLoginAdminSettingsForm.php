@@ -79,14 +79,14 @@ class MailLoginAdminSettingsForm extends ConfigFormBase {
 
     $form['general']['mail_login_email_only'] = [
       '#type' => 'checkbox',
-      '#title' => $this->t('Login by email address only'),
+      '#title' => $this->t('Log in by email address only'),
       '#default_value' => $config->get('mail_login_email_only'),
       '#states' => [
         'visible' => [
           ':input[name="mail_login_enabled"]' => ['checked' => TRUE],
         ],
       ],
-      '#description' => $this->t('This option disables login by username and forces login by email address only.'),
+      '#description' => $this->t('This option disables logging in by username and forces logging in by email address only.'),
     ];
 
     $form['general']['mail_login_override_login_labels'] = [
@@ -104,7 +104,7 @@ class MailLoginAdminSettingsForm extends ConfigFormBase {
     $form['general']['mail_login_username_title'] = [
       '#type' => 'textfield',
       '#title' => $this->t('Login form username/email address label'),
-      '#default_value' => $config->get('mail_login_username_title') ?: $this->t('Login by username/email address'),
+      '#default_value' => $config->get('mail_login_username_title') ?: $this->t('Log in by username/email address'),
       '#states' => [
         'required' => [
           ':input[name="mail_login_override_login_labels"]' => [
