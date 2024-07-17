@@ -133,4 +133,5 @@ class AuthDecorator implements UserAuthenticationInterface {
   public function authenticateAccount(UserInterface $account, string $password): bool {
     return $this->userAuth->authenticateAccount($account, $password);
   }
+
 }
