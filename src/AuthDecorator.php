@@ -8,19 +8,20 @@ use Drupal\Core\DependencyInjection\DependencySerializationTrait;
 use Drupal\Core\Entity\EntityTypeManagerInterface;
 use Drupal\Core\Messenger\MessengerInterface;
 use Drupal\Core\StringTranslation\StringTranslationTrait;
-use Drupal\user\UserAuthInterface;
+use Drupal\user\UserAuthenticationInterface;
+use Drupal\user\UserInterface;
 
 /**
  * Validates user authentication credentials.
  */
-class AuthDecorator implements UserAuthInterface {
+class AuthDecorator implements UserAuthenticationInterface {
   use DependencySerializationTrait;
   use StringTranslationTrait;
 
   /**
    * The original user authentication service.
    *
-   * @var \Drupal\user\UserAuthInterface
+   * @var \Drupal\user\UserAuthenticationInterface
    */
   protected $userAuth;
 
@@ -55,7 +56,7 @@ class AuthDecorator implements UserAuthInterface {
   /**
    * Constructs a UserAuth object.
    *
-   * @param \Drupal\user\UserAuthInterface $user_auth
+   * @param \Drupal\user\UserAuthenticationInterface $user_auth
    *   The original user authentication service.
    * @param \Drupal\Core\Entity\EntityTypeManagerInterface $entity_type_manager
    *   The entity type manager.
@@ -67,7 +68,7 @@ class AuthDecorator implements UserAuthInterface {
    *   The messenger.
    */
   public function __construct(
-    UserAuthInterface $user_auth,
+    UserAuthenticationInterface $user_auth,
     EntityTypeManagerInterface $entity_type_manager,
     Connection $connection,
     ConfigFactoryInterface $config_factory,
@@ -84,15 +85,15 @@ class AuthDecorator implements UserAuthInterface {
   /**
    * {@inheritdoc}
    */
-  public function authenticate($username, $password) {
+  public function lookupAccount($identifier): UserInterface|false {
     $config_factory = $this->configFactory;
     $config = $config_factory->get('mail_login.settings');
 
     // If we have an email lookup the username by email.
-    if ($config->get('mail_login_enabled') && !empty($username)) {
-      if (filter_var($username, FILTER_VALIDATE_EMAIL)) {
+    if ($config->get('mail_login_enabled') && !empty($identifier)) {
+      if (filter_var($identifier, FILTER_VALIDATE_EMAIL)) {
         $user_storage = $this->entityTypeManager->getStorage('user');
-        $account_search = $user_storage->loadByProperties(['mail' => $username]);
+        $account_search = $user_storage->loadByProperties(['mail' => $identifier]);
         if (!$account_search && !$config->get('mail_login_case_sensitive')) {
           // Allow case-insensitive matching of the email address, provided that
           // there is only a single match (as case-sensitive email addresses are
@@ -100,14 +101,13 @@ class AuthDecorator implements UserAuthInterface {
           $db = $this->connection;
           $user_ids = $this->entityTypeManager->getStorage('user')->getQuery()
             ->accessCheck(FALSE)
-            ->condition('mail', $db->escapeLike($username), 'LIKE')
+            ->condition('mail', $db->escapeLike($identifier), 'LIKE')
             ->execute();
           if (count($user_ids) === 1) {
             $account_search = $user_storage->loadMultiple($user_ids);
           }
         }
         if ($account = reset($account_search)) {
-          $username = $account->getAccountName();
           if ($account->isBlocked()) {
             $this->messenger->addError($this->t('The user has not been activated yet or is blocked.'));
             return FALSE;
@@ -122,8 +122,15 @@ class AuthDecorator implements UserAuthInterface {
         );
         return FALSE;
       }
+      return $account;
     }
-    return $this->userAuth->authenticate($username, $password);
+    return FALSE;
   }
 
+  /**
+   * {@inheritDoc}
+   */
+  public function authenticateAccount(UserInterface $account, string $password): bool {
+    return $this->userAuth->authenticateAccount($account, $password);
+  }
 }

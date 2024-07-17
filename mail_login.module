@@ -160,7 +160,12 @@ function mail_login_validate_authentication($form, &$form_state) {
     }
     // We are not limited by flood control, so try to authenticate.
     // Store $uid in form state as a flag for self::validateFinal().
-    $uid = \Drupal::service('user.auth')->authenticate($form_state->getValue('name'), $password);
-    $form_state->set('uid', $uid);
+    $account = \Drupal::service('user.auth')->lookupAccount($form_state->getValue('name'));
+    if ($account) {
+      $auth_status = \Drupal::service('user.auth')->authenticateAccount($account, $password);
+      if ($auth_status) {
+        $form_state->set('uid', $account->id());
+      }
+    }
   }
 }
