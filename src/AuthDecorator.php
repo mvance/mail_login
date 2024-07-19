@@ -118,11 +118,7 @@ class AuthDecorator implements UserAuthenticationInterface {
         return FALSE;
       }
       else {
-        $accounts = \Drupal::entityTypeManager()->getStorage('user')
-          ->loadByProperties([
-            'name' => $identifier,
-        ]);
-        $account = $accounts ? reset($accounts) : FALSE;
+        $account = user_load_by_name($identifier);
       }
       if ($account && $account->isBlocked()) {
         $this->messenger->addError($this->t('The user has not been activated yet or is blocked.'));
