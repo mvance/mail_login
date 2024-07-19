@@ -107,12 +107,7 @@ class AuthDecorator implements UserAuthenticationInterface {
             $account_search = $user_storage->loadMultiple($user_ids);
           }
         }
-        if ($account = reset($account_search)) {
-          if ($account->isBlocked()) {
-            $this->messenger->addError($this->t('The user has not been activated yet or is blocked.'));
-            return FALSE;
-          }
-        }
+        $account = reset($account_search);
       }
       // Check if login by email only option is enabled.
       elseif ($config->get('mail_login_email_only')) {
@@ -120,6 +115,17 @@ class AuthDecorator implements UserAuthenticationInterface {
         $this->messenger->addError(
           $this->t('Login by username has been disabled. Use your email address instead.')
         );
+        return FALSE;
+      }
+      else {
+        $accounts = \Drupal::entityTypeManager()->getStorage('user')
+          ->loadByProperties([
+            'name' => $identifier,
+        ]);
+        $account = $accounts ? reset($accounts) : FALSE;
+      }
+      if ($account && $account->isBlocked()) {
+        $this->messenger->addError($this->t('The user has not been activated yet or is blocked.'));
         return FALSE;
       }
       return $account;
