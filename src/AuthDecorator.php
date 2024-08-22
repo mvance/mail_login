@@ -9,19 +9,20 @@ use Drupal\Core\Entity\EntityTypeManagerInterface;
 use Drupal\Core\Messenger\MessengerInterface;
 use Drupal\Core\StringTranslation\StringTranslationTrait;
 use Drupal\user\UserAuthenticationInterface;
+use Drupal\user\UserAuthInterface;
 use Drupal\user\UserInterface;
 
 /**
  * Validates user authentication credentials.
  */
-class AuthDecorator implements UserAuthenticationInterface {
+class AuthDecorator implements UserAuthInterface, UserAuthenticationInterface {
   use DependencySerializationTrait;
   use StringTranslationTrait;
 
   /**
    * The original user authentication service.
    *
-   * @var \Drupal\user\UserAuthenticationInterface
+   * @var \Drupal\user\UserAuthentication
    */
   protected $userAuth;
 
@@ -134,6 +135,21 @@ class AuthDecorator implements UserAuthenticationInterface {
    */
   public function authenticateAccount(UserInterface $account, string $password): bool {
     return $this->userAuth->authenticateAccount($account, $password);
+  }
+
+  /**
+   * {@inheritDoc}
+   */
+  public function authenticate($username, $password) {
+    $account = $this->lookupAccount($username);
+    if (!$account instanceof UserInterface) {
+      return FALSE;
+    }
+    $status = $this->authenticateAccount($account, $password);
+    if (!$status) {
+      return FALSE;
+    }
+    return $account->id();
   }
 
 }
