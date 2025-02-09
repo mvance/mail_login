@@ -22,7 +22,7 @@ class AuthDecorator implements UserAuthInterface, UserAuthenticationInterface {
   /**
    * The original user authentication service.
    *
-   * @var \Drupal\user\UserAuthentication
+   * @var \Drupal\user\UserAuthentication|\Drupal\user\UserAuthInterface
    */
   protected $userAuth;
 
@@ -57,7 +57,7 @@ class AuthDecorator implements UserAuthInterface, UserAuthenticationInterface {
   /**
    * Constructs a UserAuth object.
    *
-   * @param \Drupal\user\UserAuthenticationInterface $user_auth
+   * @param \Drupal\user\UserAuthenticationInterface|\Drupal\user\UserAuthInterface $user_auth
    *   The original user authentication service.
    * @param \Drupal\Core\Entity\EntityTypeManagerInterface $entity_type_manager
    *   The entity type manager.
@@ -69,7 +69,7 @@ class AuthDecorator implements UserAuthInterface, UserAuthenticationInterface {
    *   The messenger.
    */
   public function __construct(
-    UserAuthenticationInterface $user_auth,
+    UserAuthenticationInterface|UserAuthInterface $user_auth,
     EntityTypeManagerInterface $entity_type_manager,
     Connection $connection,
     ConfigFactoryInterface $config_factory,
@@ -134,7 +134,15 @@ class AuthDecorator implements UserAuthInterface, UserAuthenticationInterface {
    * {@inheritDoc}
    */
   public function authenticateAccount(UserInterface $account, string $password): bool {
-    return $this->userAuth->authenticateAccount($account, $password);
+    // Auth providers are allowed to use the old method below Drupal 12 and thus
+    // do not necessarily implement the new UserAuthenticationInterface.
+    if ($this->userAuth instanceof \Drupal\user\UserAuthenticationInterface) {
+      return $this->userAuth->authenticateAccount($account, $password);
+    }
+    else {
+      $username = $account->getAccountName();
+      return (bool) $this->userAuth->authenticate($username, $password);
+    }
   }
 
   /**
@@ -142,12 +150,21 @@ class AuthDecorator implements UserAuthInterface, UserAuthenticationInterface {
    */
   public function authenticate($username, $password) {
     $account = $this->lookupAccount($username);
-    if (!$account instanceof UserInterface) {
-      return FALSE;
+    // Auth providers are allowed to use the old method below Drupal 12 and thus
+    // do not necessarily implement the new UserAuthenticationInterface.
+    if ($this->userAuth instanceof \Drupal\user\UserAuthenticationInterface) {
+      if (!$account instanceof UserInterface) {
+        return FALSE;
+      }
+      $status = $this->authenticateAccount($account, $password);
+      if (!$status) {
+        return FALSE;
+      }
     }
-    $status = $this->authenticateAccount($account, $password);
-    if (!$status) {
-      return FALSE;
+    else {
+      if (!$account instanceof UserInterface) {
+        return $this->userAuth->authenticate($username, $password);
+      }
     }
     return $account->id();
   }
