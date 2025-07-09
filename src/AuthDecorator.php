@@ -136,7 +136,7 @@ class AuthDecorator implements UserAuthInterface, UserAuthenticationInterface {
   public function authenticateAccount(UserInterface $account, string $password): bool {
     // Auth providers are allowed to use the old method below Drupal 12 and thus
     // do not necessarily implement the new UserAuthenticationInterface.
-    if ($this->userAuth instanceof \Drupal\user\UserAuthenticationInterface) {
+    if ($this->userAuth instanceof UserAuthenticationInterface) {
       return $this->userAuth->authenticateAccount($account, $password);
     }
     else {
@@ -152,7 +152,7 @@ class AuthDecorator implements UserAuthInterface, UserAuthenticationInterface {
     $account = $this->lookupAccount($username);
     // Auth providers are allowed to use the old method below Drupal 12 and thus
     // do not necessarily implement the new UserAuthenticationInterface.
-    if ($this->userAuth instanceof \Drupal\user\UserAuthenticationInterface) {
+    if ($this->userAuth instanceof UserAuthenticationInterface) {
       if (!$account instanceof UserInterface) {
         return FALSE;
       }
