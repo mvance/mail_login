@@ -119,7 +119,9 @@ class AuthDecorator implements UserAuthInterface, UserAuthenticationInterface {
         return FALSE;
       }
       else {
-        $account = user_load_by_name($identifier);
+        $user_storage = $this->entityTypeManager->getStorage('user');
+        $account_search = $user_storage->loadByProperties(['name' => $identifier]);
+        $account = reset($account_search);
       }
       if ($account && $account->isBlocked()) {
         $this->messenger->addError($this->t('The user has not been activated yet or is blocked.'));
