@@ -117,7 +117,7 @@ function mail_login_validate_authentication($form, &$form_state) {
     }
 
     $account = NULL;
-    // If mail login is enabled, check whether the submitted value is an e-mail
+    // If mail login is enabled, check whether the submitted value is an email
     // and translate it to the *canonical* user-name so that Drupal’s flood-
     // control sees a single, consistent identifier.
     if ($config->get('mail_login_enabled')) {
@@ -134,7 +134,7 @@ function mail_login_validate_authentication($form, &$form_state) {
           // Replace the submitted identifier with the canonical user-name so
           // - flood-pre-checks (`user.failed_login_*`) run,
           // - lookupAccount() succeeds,
-          // - the UID lock-out applies equally to username *and* e-mail.
+          // - the UID lock-out applies equally to username *and* email.
           $username = $account->getAccountName();
           $form_state->setValue('name', $username);
         }
