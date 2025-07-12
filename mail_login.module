@@ -173,7 +173,8 @@ function mail_login_validate_authentication($form, &$form_state) {
     }
     // We are not limited by flood control, so try to authenticate.
     // Store $uid in form state as a flag for self::validateFinal().
-    // Only perform authentication if we haven't already found an account via email lookup above.
+    // Only perform authentication if we haven't already found an account
+    // via email lookup above.
     if (!$account) {
       $account = \Drupal::service('user.auth')->lookupAccount($form_state->getValue('name'));
     }
