@@ -118,7 +118,7 @@ function mail_login_validate_authentication($form, &$form_state) {
 
     $account = NULL;
     // If mail login is enabled, check whether the submitted value is an email
-    // and translate it to the *canonical* user-name so that Drupal’s flood-
+    // and translate it to the *canonical* user-name so that Drupal's flood-
     // control sees a single, consistent identifier.
     if ($config->get('mail_login_enabled')) {
       if (filter_var($form_state->getValue('name'), FILTER_VALIDATE_EMAIL)) {
@@ -173,7 +173,10 @@ function mail_login_validate_authentication($form, &$form_state) {
     }
     // We are not limited by flood control, so try to authenticate.
     // Store $uid in form state as a flag for self::validateFinal().
-    $account = \Drupal::service('user.auth')->lookupAccount($form_state->getValue('name'));
+    // Only perform authentication if we haven't already found an account via email lookup above.
+    if (!$account) {
+      $account = \Drupal::service('user.auth')->lookupAccount($form_state->getValue('name'));
+    }
     if ($account) {
       $auth_status = \Drupal::service('user.auth')->authenticateAccount($account, $password);
       if ($auth_status) {
