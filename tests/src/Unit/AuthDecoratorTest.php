@@ -112,6 +112,10 @@ class AuthDecoratorTest extends UnitTestCase {
       $this->configFactory,
       $this->messenger
     );
+
+    // Mock the string translation service to avoid container dependency.
+    $string_translation = $this->getStringTranslationStub();
+    $this->authDecorator->setStringTranslation($string_translation);
   }
 
   /**
@@ -170,18 +174,10 @@ class AuthDecoratorTest extends UnitTestCase {
 
     // Mock user storage to return empty array for email lookup (no email match).
     // Then return our test user for username lookup.
-    $this->userStorage->expects($this->exactly(2))
+    $this->userStorage->expects($this->once())
       ->method('loadByProperties')
-      ->willReturnCallback(function($properties) use ($user) {
-        if (isset($properties['mail'])) {
-          // Email lookup returns empty (no match).
-          return [];
-        } elseif (isset($properties['name'])) {
-          // Username lookup returns our test user.
-          return [$user];
-        }
-        return [];
-      });
+      ->with(['name' => $username])
+      ->willReturn([$user]);
 
     // Call lookupAccount with username.
     $result = $this->authDecorator->lookupAccount($username);
@@ -250,6 +246,128 @@ class AuthDecoratorTest extends UnitTestCase {
     $result = $this->authDecorator->lookupAccount($identifier);
 
     // Assert FALSE is returned (mail login disabled).
+    $this->assertFalse($result);
+  }
+
+  /**
+   * Test lookupAccount with case-sensitive email matching.
+   */
+  public function testLookupAccountCaseSensitive() {
+    $email = 'User@Example.com';
+    $user = $this->createMockUser(123, 'testuser', $email, FALSE);
+
+    // Configure mail_login_enabled = TRUE, case_sensitive = TRUE.
+    $this->config->expects($this->any())
+      ->method('get')
+      ->willReturnMap([
+        ['mail_login_enabled', TRUE],
+        ['mail_login_case_sensitive', TRUE],
+        ['mail_login_email_only', FALSE],
+      ]);
+
+    // Mock user storage to return our test user for exact email match.
+    $this->userStorage->expects($this->once())
+      ->method('loadByProperties')
+      ->with(['mail' => $email])
+      ->willReturn([$user]);
+
+    // Call lookupAccount with exact case email.
+    $result = $this->authDecorator->lookupAccount($email);
+
+    // Assert correct user object is returned.
+    $this->assertSame($user, $result);
+  }
+
+  /**
+   * Test lookupAccount with case-insensitive email matching.
+   */
+  public function testLookupAccountCaseInsensitive() {
+    $email_input = 'USER@EXAMPLE.COM';
+    $email_stored = 'user@example.com';
+    $user = $this->createMockUser(123, 'testuser', $email_stored, FALSE);
+
+    // Configure mail_login_enabled = TRUE, case_sensitive = FALSE.
+    $this->config->expects($this->any())
+      ->method('get')
+      ->willReturnMap([
+        ['mail_login_enabled', TRUE],
+        ['mail_login_case_sensitive', FALSE],
+        ['mail_login_email_only', FALSE],
+      ]);
+
+    // Mock user storage to return empty for exact match, then use database query.
+    $this->userStorage->expects($this->once())
+      ->method('loadByProperties')
+      ->with(['mail' => $email_input])
+      ->willReturn([]);
+
+    // Mock the database query for case-insensitive lookup.
+    $query = $this->createMock(\Drupal\Core\Entity\Query\QueryInterface::class);
+    $query->expects($this->once())
+      ->method('accessCheck')
+      ->with(FALSE)
+      ->willReturnSelf();
+    $query->expects($this->once())
+      ->method('condition')
+      ->with('mail', $this->anything(), 'LIKE')
+      ->willReturnSelf();
+    $query->expects($this->once())
+      ->method('execute')
+      ->willReturn([123]);
+
+    $this->userStorage->expects($this->once())
+      ->method('getQuery')
+      ->willReturn($query);
+
+    $this->userStorage->expects($this->once())
+      ->method('loadMultiple')
+      ->with([123])
+      ->willReturn([123 => $user]);
+
+    // Mock database escapeLike method.
+    $this->connection->expects($this->once())
+      ->method('escapeLike')
+      ->with($email_input)
+      ->willReturn($email_input);
+
+    // Call lookupAccount with different case email.
+    $result = $this->authDecorator->lookupAccount($email_input);
+
+    // Assert correct user object is returned.
+    $this->assertSame($user, $result);
+  }
+
+  /**
+   * Test lookupAccount with a blocked user.
+   */
+  public function testLookupAccountWithBlockedUser() {
+    $email = 'blocked@example.com';
+    $user = $this->createMockUser(123, 'blockeduser', $email, TRUE);
+
+    // Configure mail_login_enabled = TRUE.
+    $this->config->expects($this->any())
+      ->method('get')
+      ->willReturnMap([
+        ['mail_login_enabled', TRUE],
+        ['mail_login_case_sensitive', TRUE],
+        ['mail_login_email_only', FALSE],
+      ]);
+
+    // Mock user storage to return our blocked test user.
+    $this->userStorage->expects($this->once())
+      ->method('loadByProperties')
+      ->with(['mail' => $email])
+      ->willReturn([$user]);
+
+    // Expect error message to be displayed via messenger.
+    $this->messenger->expects($this->once())
+      ->method('addError')
+      ->with($this->stringContains('The user has not been activated yet or is blocked'));
+
+    // Call lookupAccount with blocked user email.
+    $result = $this->authDecorator->lookupAccount($email);
+
+    // Assert FALSE is returned for blocked user.
     $this->assertFalse($result);
   }
 

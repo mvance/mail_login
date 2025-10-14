@@ -51,20 +51,20 @@
   - [x] Verify fallback to original userAuth service
 
 ### Edge Cases and Security
-- [ ] **Prompt 5: Implement Case Sensitivity and Blocked User Tests**
-  - [ ] Create `testLookupAccountCaseSensitive()` method
-  - [ ] Test case-sensitive email matching
-  - [ ] Configure mail_login_case_sensitive = TRUE
-  - [ ] Verify exact email match behavior
-  - [ ] Create `testLookupAccountCaseInsensitive()` method
-  - [ ] Test case-insensitive email matching
-  - [ ] Configure mail_login_case_sensitive = FALSE
-  - [ ] Mock database query for case-insensitive lookup
-  - [ ] Handle single-match scenario
-  - [ ] Create `testLookupAccountWithBlockedUser()` method
-  - [ ] Test blocked user detection
-  - [ ] Verify error message display
-  - [ ] Ensure FALSE returned for blocked users
+- [x] **Prompt 5: Implement Case Sensitivity and Blocked User Tests**
+  - [x] Create `testLookupAccountCaseSensitive()` method
+  - [x] Test case-sensitive email matching
+  - [x] Configure mail_login_case_sensitive = TRUE
+  - [x] Verify exact email match behavior
+  - [x] Create `testLookupAccountCaseInsensitive()` method
+  - [x] Test case-insensitive email matching
+  - [x] Configure mail_login_case_sensitive = FALSE
+  - [x] Mock database query for case-insensitive lookup
+  - [x] Handle single-match scenario
+  - [x] Create `testLookupAccountWithBlockedUser()` method
+  - [x] Test blocked user detection
+  - [x] Verify error message display
+  - [x] Ensure FALSE returned for blocked users
 
 ### Authentication Methods
 - [ ] **Prompt 6: Add Authentication Method Tests**
