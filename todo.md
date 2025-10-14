@@ -3,16 +3,16 @@
 ## Phase 1: Basic Coverage - Authentication Flow Testing
 
 ### Infrastructure Setup
-- [ ] **Prompt 1: Create Basic Test Infrastructure**
-  - [ ] Create directory structure: `tests/src/Unit/`
-  - [ ] Create directory structure: `tests/src/Functional/`
-  - [ ] Create basic `tests/src/Unit/AuthDecoratorTest.php`
-  - [ ] Add proper namespace and use statements
-  - [ ] Extend UnitTestCase
-  - [ ] Add basic setUp() method
-  - [ ] Add placeholder test method
-  - [ ] Follow Drupal coding standards with docblocks
-  - [ ] Verify test can run successfully
+- [x] **Prompt 1: Create Basic Test Infrastructure**
+  - [x] Create directory structure: `tests/src/Unit/`
+  - [x] Create directory structure: `tests/src/Functional/`
+  - [x] Create basic `tests/src/Unit/AuthDecoratorTest.php`
+  - [x] Add proper namespace and use statements
+  - [x] Extend UnitTestCase
+  - [x] Add basic setUp() method
+  - [x] Add placeholder test method
+  - [x] Follow Drupal coding standards with docblocks
+  - [x] Verify test can run successfully
 
 ### Unit Test Foundation
 - [ ] **Prompt 2: Add Basic Mocking Infrastructure**
