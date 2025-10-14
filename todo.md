@@ -81,16 +81,16 @@
   - [x] Test interface detection logic
 
 ### Functional Test Foundation
-- [ ] **Prompt 7: Create Basic Functional Test Infrastructure**
-  - [ ] Create `tests/src/Functional/AuthenticationTest.php`
-  - [ ] Extend BrowserTestBase
-  - [ ] Set up required modules ['mail_login', 'user']
-  - [ ] Add proper namespace and use statements
-  - [ ] Add setUp() method for test preparation
-  - [ ] Add basic test for environment verification
-  - [ ] Add helper method for creating test users
-  - [ ] Add helper method for configuring mail_login settings
-  - [ ] Add helper methods for login success/failure assertions
+- [x] **Prompt 7: Create Basic Functional Test Infrastructure**
+  - [x] Create `tests/src/Functional/AuthenticationTest.php`
+  - [x] Extend BrowserTestBase
+  - [x] Set up required modules ['mail_login', 'user']
+  - [x] Add proper namespace and use statements
+  - [x] Add setUp() method for test preparation
+  - [x] Add basic test for environment verification
+  - [x] Add helper method for creating test users
+  - [x] Add helper method for configuring mail_login settings
+  - [x] Add helper methods for login success/failure assertions
 
 ### Core Functional Tests
 - [ ] **Prompt 8: Implement Core Functional Login Tests**

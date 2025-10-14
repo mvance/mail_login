@@ -201,7 +201,8 @@ class AuthDecoratorTest extends UnitTestCase {
         ['mail_login_email_only', TRUE],
       ]);
 
-    // Mock user storage to return empty array for email lookup (username is not email).
+    // The username is not a valid email, so no loadByProperties call for email lookup.
+    // But the code will still try to load by email first, then hit the email_only check.
     $this->userStorage->expects($this->once())
       ->method('loadByProperties')
       ->with(['mail' => $username])
@@ -400,7 +401,9 @@ class AuthDecoratorTest extends UnitTestCase {
       ->with(['mail' => $email])
       ->willReturn([$user]);
 
-    // Mock the original userAuth service to return TRUE for authentication.
+    // The authenticate() method calls lookupAccount() first, then authenticateAccount().
+    // Since our userAuth is UserAuthInterface (not UserAuthenticationInterface),
+    // it should call authenticate() on the original service.
     $this->userAuth->expects($this->once())
       ->method('authenticate')
       ->with('testuser', $password)
