@@ -1,5 +1,3 @@
-# Mail Login Module - PHPUnit Test Suite
-
 ## Overview
 
 This test suite provides comprehensive coverage for the Drupal mail_login module, ensuring that email-based authentication functionality works correctly across different configurations and scenarios. The tests are organized into unit tests and functional tests, covering both isolated component testing and end-to-end user workflows.
@@ -14,6 +12,11 @@ This test suite provides comprehensive coverage for the Drupal mail_login module
 
 #### Functional Tests (`tests/src/Functional/`)
 - **AuthenticationTest.php** - End-to-end browser-based testing of complete login flows
+
+### Test Scripts
+
+- **run-tests.sh**: Comprehensive test runner with multiple execution modes.
+- **smoke-test.sh**: Quick validation of core functionality.
 
 ### Coverage Areas
 
