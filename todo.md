@@ -38,17 +38,17 @@
   - [x] Follow behavioral assertion strategy
 
 ### Configuration-Dependent Tests
-- [ ] **Prompt 4: Add Username Fallback and Email-Only Mode Tests**
-  - [ ] Create `testLookupAccountWithValidUsername()` method
-  - [ ] Test username fallback when email lookup fails
-  - [ ] Verify proper user storage method calls
-  - [ ] Create `testLookupAccountEmailOnlyModeWithUsername()` method
-  - [ ] Configure mail_login_email_only = TRUE
-  - [ ] Test username login rejection
-  - [ ] Verify error message via messenger mock
-  - [ ] Create `testLookupAccountMailLoginDisabled()` method
-  - [ ] Test behavior when mail_login_enabled = FALSE
-  - [ ] Verify fallback to original userAuth service
+- [x] **Prompt 4: Add Username Fallback and Email-Only Mode Tests**
+  - [x] Create `testLookupAccountWithValidUsername()` method
+  - [x] Test username fallback when email lookup fails
+  - [x] Verify proper user storage method calls
+  - [x] Create `testLookupAccountEmailOnlyModeWithUsername()` method
+  - [x] Configure mail_login_email_only = TRUE
+  - [x] Test username login rejection
+  - [x] Verify error message via messenger mock
+  - [x] Create `testLookupAccountMailLoginDisabled()` method
+  - [x] Test behavior when mail_login_enabled = FALSE
+  - [x] Verify fallback to original userAuth service
 
 ### Edge Cases and Security
 - [ ] **Prompt 5: Implement Case Sensitivity and Blocked User Tests**

@@ -153,6 +153,107 @@ class AuthDecoratorTest extends UnitTestCase {
   }
 
   /**
+   * Test lookupAccount with a valid username (fallback behavior).
+   */
+  public function testLookupAccountWithValidUsername() {
+    $username = 'testuser';
+    $user = $this->createMockUser(123, $username, 'user@example.com', FALSE);
+
+    // Configure mail_login_enabled = TRUE, email_only = FALSE.
+    $this->config->expects($this->any())
+      ->method('get')
+      ->willReturnMap([
+        ['mail_login_enabled', TRUE],
+        ['mail_login_case_sensitive', TRUE],
+        ['mail_login_email_only', FALSE],
+      ]);
+
+    // Mock user storage to return empty array for email lookup (no email match).
+    // Then return our test user for username lookup.
+    $this->userStorage->expects($this->exactly(2))
+      ->method('loadByProperties')
+      ->willReturnCallback(function($properties) use ($user) {
+        if (isset($properties['mail'])) {
+          // Email lookup returns empty (no match).
+          return [];
+        } elseif (isset($properties['name'])) {
+          // Username lookup returns our test user.
+          return [$user];
+        }
+        return [];
+      });
+
+    // Call lookupAccount with username.
+    $result = $this->authDecorator->lookupAccount($username);
+
+    // Assert correct user object is returned.
+    $this->assertSame($user, $result);
+  }
+
+  /**
+   * Test lookupAccount in email-only mode rejects username login.
+   */
+  public function testLookupAccountEmailOnlyModeWithUsername() {
+    $username = 'testuser';
+
+    // Configure mail_login_enabled = TRUE, email_only = TRUE.
+    $this->config->expects($this->any())
+      ->method('get')
+      ->willReturnMap([
+        ['mail_login_enabled', TRUE],
+        ['mail_login_case_sensitive', TRUE],
+        ['mail_login_email_only', TRUE],
+      ]);
+
+    // Mock user storage to return empty array for email lookup (username is not email).
+    $this->userStorage->expects($this->once())
+      ->method('loadByProperties')
+      ->with(['mail' => $username])
+      ->willReturn([]);
+
+    // Expect error message to be displayed via messenger.
+    $this->messenger->expects($this->once())
+      ->method('addError')
+      ->with($this->stringContains('Login by username has been disabled'));
+
+    // Call lookupAccount with username.
+    $result = $this->authDecorator->lookupAccount($username);
+
+    // Assert FALSE is returned.
+    $this->assertFalse($result);
+  }
+
+  /**
+   * Test lookupAccount when mail login is disabled.
+   */
+  public function testLookupAccountMailLoginDisabled() {
+    $identifier = 'user@example.com';
+
+    // Configure mail_login_enabled = FALSE.
+    $this->config->expects($this->any())
+      ->method('get')
+      ->willReturnMap([
+        ['mail_login_enabled', FALSE],
+        ['mail_login_case_sensitive', TRUE],
+        ['mail_login_email_only', FALSE],
+      ]);
+
+    // User storage should not be called when mail login is disabled.
+    $this->userStorage->expects($this->never())
+      ->method('loadByProperties');
+
+    // Messenger should not be called.
+    $this->messenger->expects($this->never())
+      ->method('addError');
+
+    // Call lookupAccount with email.
+    $result = $this->authDecorator->lookupAccount($identifier);
+
+    // Assert FALSE is returned (mail login disabled).
+    $this->assertFalse($result);
+  }
+
+  /**
    * Helper method to create a mock user object.
    *
    * @param int $uid
