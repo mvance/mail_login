@@ -303,7 +303,7 @@ class AuthenticationTest extends BrowserTestBase {
     ], 'Log in');
 
     // Assert successful login.
-    $this->assertLoginSuccess('lowercaseuser');
+    $this->assertLoginSuccess('lowercaseuser', $lowercaseUser);
 
     // Log out for next test.
     $this->drupalLogout();
@@ -317,7 +317,7 @@ class AuthenticationTest extends BrowserTestBase {
     ], 'Log in');
 
     // Assert successful login.
-    $this->assertLoginSuccess('lowercaseuser');
+    $this->assertLoginSuccess('lowercaseuser', $lowercaseUser);
 
     // Log out for next test.
     $this->drupalLogout();
@@ -331,7 +331,7 @@ class AuthenticationTest extends BrowserTestBase {
     ], 'Log in');
 
     // Assert successful login.
-    $this->assertLoginSuccess('lowercaseuser');
+    $this->assertLoginSuccess('lowercaseuser', $lowercaseUser);
   }
 
   /**
@@ -358,7 +358,7 @@ class AuthenticationTest extends BrowserTestBase {
     ], 'Log in');
 
     // Assert successful login for lowercase user.
-    $this->assertLoginSuccess('loweruser');
+    $this->assertLoginSuccess('loweruser', $lowerUser);
 
     // Log out for next test.
     $this->drupalLogout();
@@ -372,7 +372,7 @@ class AuthenticationTest extends BrowserTestBase {
     ], 'Log in');
 
     // Assert successful login for uppercase user.
-    $this->assertLoginSuccess('upperuser');
+    $this->assertLoginSuccess('upperuser', $upperUser);
 
     // Log out for next test.
     $this->drupalLogout();
@@ -406,7 +406,7 @@ class AuthenticationTest extends BrowserTestBase {
    * @return array
    *   Array of email case variations for testing.
    */
-  public function emailCaseVariationsProvider() {
+  public static function emailCaseVariationsProvider() {
     return [
       'all_lowercase' => ['user@example.com'],
       'all_uppercase' => ['USER@EXAMPLE.COM'],
@@ -442,7 +442,7 @@ class AuthenticationTest extends BrowserTestBase {
     ], 'Log in');
 
     // Assert successful login regardless of case.
-    $this->assertLoginSuccess('standarduser');
+    $this->assertLoginSuccess('standarduser', $standardUser);
 
     // Clean up by logging out.
     $this->drupalLogout();
@@ -493,11 +493,16 @@ class AuthenticationTest extends BrowserTestBase {
    *
    * @param string $username
    *   The expected username.
+   * @param \Drupal\user\UserInterface $user
+   *   The user object that should have logged in.
    */
-  protected function assertLoginSuccess($username) {
+  protected function assertLoginSuccess($username, $user = NULL) {
+    // Use the provided user or fall back to the default test user.
+    $expected_user = $user ?: $this->testUser;
+    
     // Check for successful login indicators.
     // After successful login, we should be redirected to the user profile page.
-    $this->assertSession()->addressEquals('/user/' . $this->testUser->id());
+    $this->assertSession()->addressEquals('/user/' . $expected_user->id());
     
     // Check for common indicators of successful login.
     // The exact text may vary, so we'll check for multiple possibilities.
