@@ -123,17 +123,17 @@
   - [x] Ensure no sensitive information leaked
 
 ### Case Sensitivity Functional Tests
-- [ ] **Prompt 10: Add Case Sensitivity Functional Tests**
-  - [ ] Create `testCaseInsensitiveEmailLogin()` method
-  - [ ] Create user with lowercase email
-  - [ ] Configure mail_login_case_sensitive = FALSE
-  - [ ] Test login with mixed-case email
-  - [ ] Verify successful login
-  - [ ] Create `testCaseSensitiveEmailLogin()` method
-  - [ ] Configure mail_login_case_sensitive = TRUE
-  - [ ] Test case-sensitive matching works correctly
-  - [ ] Verify case mismatches fail appropriately
-  - [ ] Add data providers for multiple email case variations
+- [x] **Prompt 10: Add Case Sensitivity Functional Tests**
+  - [x] Create `testCaseInsensitiveEmailLogin()` method
+  - [x] Create user with lowercase email
+  - [x] Configure mail_login_case_sensitive = FALSE
+  - [x] Test login with mixed-case email
+  - [x] Verify successful login
+  - [x] Create `testCaseSensitiveEmailLogin()` method
+  - [x] Configure mail_login_case_sensitive = TRUE
+  - [x] Test case-sensitive matching works correctly
+  - [x] Verify case mismatches fail appropriately
+  - [x] Add data providers for multiple email case variations
 
 ### Admin Form Testing
 - [ ] **Prompt 11: Create Admin Settings Form Unit Tests**

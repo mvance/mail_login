@@ -281,6 +281,174 @@ class AuthenticationTest extends BrowserTestBase {
   }
 
   /**
+   * Test case-insensitive email login functionality.
+   */
+  public function testCaseInsensitiveEmailLogin() {
+    // Create a user with lowercase email.
+    $lowercaseUser = $this->createTestUser('lowercaseuser', 'lowercase@example.com', 'testpassword');
+
+    // Configure mail_login with case-insensitive matching.
+    $this->configureMailLoginSettings([
+      'mail_login_enabled' => TRUE,
+      'mail_login_case_sensitive' => FALSE,
+      'mail_login_email_only' => FALSE,
+    ]);
+
+    // Test login with mixed-case email.
+    $this->drupalGet('/user/login');
+
+    $this->submitForm([
+      'name' => 'LowerCase@Example.COM',
+      'pass' => 'testpassword',
+    ], 'Log in');
+
+    // Assert successful login.
+    $this->assertLoginSuccess('lowercaseuser');
+
+    // Log out for next test.
+    $this->drupalLogout();
+
+    // Test with all uppercase email.
+    $this->drupalGet('/user/login');
+
+    $this->submitForm([
+      'name' => 'LOWERCASE@EXAMPLE.COM',
+      'pass' => 'testpassword',
+    ], 'Log in');
+
+    // Assert successful login.
+    $this->assertLoginSuccess('lowercaseuser');
+
+    // Log out for next test.
+    $this->drupalLogout();
+
+    // Test with random case variations.
+    $this->drupalGet('/user/login');
+
+    $this->submitForm([
+      'name' => 'lOwErCaSe@ExAmPlE.cOm',
+      'pass' => 'testpassword',
+    ], 'Log in');
+
+    // Assert successful login.
+    $this->assertLoginSuccess('lowercaseuser');
+  }
+
+  /**
+   * Test case-sensitive email login functionality.
+   */
+  public function testCaseSensitiveEmailLogin() {
+    // Create users with different case emails.
+    $lowerUser = $this->createTestUser('loweruser', 'test@example.com', 'lowerpassword');
+    $upperUser = $this->createTestUser('upperuser', 'TEST@EXAMPLE.COM', 'upperpassword');
+
+    // Configure mail_login with case-sensitive matching.
+    $this->configureMailLoginSettings([
+      'mail_login_enabled' => TRUE,
+      'mail_login_case_sensitive' => TRUE,
+      'mail_login_email_only' => FALSE,
+    ]);
+
+    // Test login with exact lowercase email.
+    $this->drupalGet('/user/login');
+
+    $this->submitForm([
+      'name' => 'test@example.com',
+      'pass' => 'lowerpassword',
+    ], 'Log in');
+
+    // Assert successful login for lowercase user.
+    $this->assertLoginSuccess('loweruser');
+
+    // Log out for next test.
+    $this->drupalLogout();
+
+    // Test login with exact uppercase email.
+    $this->drupalGet('/user/login');
+
+    $this->submitForm([
+      'name' => 'TEST@EXAMPLE.COM',
+      'pass' => 'upperpassword',
+    ], 'Log in');
+
+    // Assert successful login for uppercase user.
+    $this->assertLoginSuccess('upperuser');
+
+    // Log out for next test.
+    $this->drupalLogout();
+
+    // Test case mismatch should fail - try uppercase email with lowercase password.
+    $this->drupalGet('/user/login');
+
+    $this->submitForm([
+      'name' => 'TEST@EXAMPLE.COM',
+      'pass' => 'lowerpassword',
+    ], 'Log in');
+
+    // This should fail because the password doesn't match the uppercase user.
+    $this->assertLoginFailure();
+
+    // Test another case mismatch - try mixed case email that doesn't exactly match either.
+    $this->drupalGet('/user/login');
+
+    $this->submitForm([
+      'name' => 'Test@Example.Com',
+      'pass' => 'lowerpassword',
+    ], 'Log in');
+
+    // This should fail because case-sensitive mode requires exact email match.
+    $this->assertLoginFailure();
+  }
+
+  /**
+   * Data provider for email case variations.
+   *
+   * @return array
+   *   Array of email case variations for testing.
+   */
+  public function emailCaseVariationsProvider() {
+    return [
+      'all_lowercase' => ['user@example.com'],
+      'all_uppercase' => ['USER@EXAMPLE.COM'],
+      'mixed_case_1' => ['User@Example.Com'],
+      'mixed_case_2' => ['uSeR@eXaMpLe.CoM'],
+      'domain_uppercase' => ['user@EXAMPLE.COM'],
+      'local_uppercase' => ['USER@example.com'],
+    ];
+  }
+
+  /**
+   * Test multiple email case variations with case-insensitive mode.
+   *
+   * @dataProvider emailCaseVariationsProvider
+   */
+  public function testEmailCaseVariationsInsensitive($email_variant) {
+    // Create a user with standard lowercase email.
+    $standardUser = $this->createTestUser('standarduser', 'user@example.com', 'standardpassword');
+
+    // Configure mail_login with case-insensitive matching.
+    $this->configureMailLoginSettings([
+      'mail_login_enabled' => TRUE,
+      'mail_login_case_sensitive' => FALSE,
+      'mail_login_email_only' => FALSE,
+    ]);
+
+    // Test login with the email variant.
+    $this->drupalGet('/user/login');
+
+    $this->submitForm([
+      'name' => $email_variant,
+      'pass' => 'standardpassword',
+    ], 'Log in');
+
+    // Assert successful login regardless of case.
+    $this->assertLoginSuccess('standarduser');
+
+    // Clean up by logging out.
+    $this->drupalLogout();
+  }
+
+  /**
    * Helper method to create a test user with email and password.
    *
    * @param string $username
