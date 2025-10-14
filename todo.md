@@ -136,15 +136,15 @@
   - [x] Add data providers for multiple email case variations
 
 ### Admin Form Testing
-- [ ] **Prompt 11: Create Admin Settings Form Unit Tests**
-  - [ ] Create `tests/src/Unit/Form/MailLoginAdminSettingsFormTest.php`
-  - [ ] Test `getFormId()` returns correct form ID
-  - [ ] Test `getEditableConfigNames()` returns correct config names
-  - [ ] Test `buildForm()` creates expected form structure
-  - [ ] Test `submitForm()` saves configuration correctly
-  - [ ] Mock ConfigFactoryInterface and Config objects
-  - [ ] Test form building with various configuration states
-  - [ ] Verify form submission saves all configuration values
+- [x] **Prompt 11: Create Admin Settings Form Unit Tests**
+  - [x] Create `tests/src/Unit/Form/MailLoginAdminSettingsFormTest.php`
+  - [x] Test `getFormId()` returns correct form ID
+  - [x] Test `getEditableConfigNames()` returns correct config names
+  - [x] Test `buildForm()` creates expected form structure
+  - [x] Test `submitForm()` saves configuration correctly
+  - [x] Mock ConfigFactoryInterface and Config objects
+  - [x] Test form building with various configuration states
+  - [x] Verify form submission saves all configuration values
 
 ### Enhanced Coverage
 - [ ] **Prompt 12: Add Data Providers and Edge Case Tests**
