@@ -8,6 +8,23 @@ use Drupal\user\Entity\User;
 /**
  * Tests for mail_login authentication functionality.
  *
+ * This test class provides comprehensive functional testing for the mail_login
+ * module's authentication features. Tests are performed using real browser
+ * interactions to verify end-to-end user workflows.
+ *
+ * Test Coverage:
+ * - Complete email and username login flows
+ * - Configuration-dependent behavior (email-only mode, case sensitivity)
+ * - Error handling and user feedback
+ * - Security considerations (blocked users, invalid input)
+ * - Edge cases with various email formats and password complexity
+ * - Performance considerations for multiple login scenarios
+ *
+ * Test Data:
+ * - Uses realistic email formats and usernames
+ * - Tests with various password complexity levels
+ * - Includes edge cases like Unicode characters and special symbols
+ *
  * @group mail_login
  */
 class AuthenticationTest extends BrowserTestBase {
@@ -33,11 +50,19 @@ class AuthenticationTest extends BrowserTestBase {
 
   /**
    * {@inheritdoc}
+   *
+   * Sets up the test environment with a default test user and clean state.
+   *
+   * This method prepares the testing environment by:
+   * - Calling parent setUp to initialize Drupal
+   * - Creating a standard test user for use across multiple test methods
+   * - Ensuring a clean state for each test execution
    */
   protected function setUp(): void {
     parent::setUp();
 
-    // Create a test user.
+    // Create a standard test user that will be available for all test methods.
+    // This user has a simple username, standard email format, and basic password.
     $this->testUser = $this->createTestUser('testuser', 'test@example.com', 'testpassword');
   }
 
@@ -716,40 +741,64 @@ class AuthenticationTest extends BrowserTestBase {
   /**
    * Helper method to create a test user with email and password.
    *
+   * This helper creates users for testing various authentication scenarios.
+   * The user is immediately saved to the database and can be used for
+   * login testing in functional tests.
+   *
    * @param string $username
-   *   The username.
+   *   The username for the new user account.
    * @param string $email
-   *   The email address.
+   *   The email address for the new user account.
    * @param string $password
-   *   The password.
+   *   The password for the new user account (stored securely).
    * @param bool $blocked
-   *   Whether the user should be blocked.
+   *   Whether the user should be blocked (status = 0). Default FALSE.
    *
    * @return \Drupal\user\UserInterface
-   *   The created user.
+   *   The created and saved user entity.
    */
   protected function createTestUser($username, $email, $password, $blocked = FALSE) {
+    // Create a new user entity with the specified properties.
     $user = User::create([
       'name' => $username,
       'mail' => $email,
       'pass' => $password,
-      'status' => !$blocked,
+      'status' => !$blocked,  // Convert blocked flag to status (1 = active, 0 = blocked)
     ]);
+    
+    // Save the user to the database so it can be used in authentication tests.
     $user->save();
+    
     return $user;
   }
 
   /**
    * Helper method to configure mail_login settings.
    *
+   * This helper method provides a convenient way to configure mail_login
+   * settings for different test scenarios. It directly modifies the
+   * configuration and saves it immediately.
+   *
+   * Common settings:
+   * - mail_login_enabled: Enable/disable email login functionality
+   * - mail_login_case_sensitive: Control case sensitivity for email matching
+   * - mail_login_email_only: Restrict login to email addresses only
+   * - mail_login_override_login_labels: Enable custom login form labels
+   *
    * @param array $settings
-   *   Array of settings to configure.
+   *   Associative array of configuration keys and values to set.
+   *   Example: ['mail_login_enabled' => TRUE, 'mail_login_case_sensitive' => FALSE]
    */
   protected function configureMailLoginSettings(array $settings) {
+    // Get the editable configuration object for mail_login settings.
     $config = \Drupal::configFactory()->getEditable('mail_login.settings');
+    
+    // Apply each setting from the provided array.
     foreach ($settings as $key => $value) {
       $config->set($key, $value);
     }
+    
+    // Save the configuration changes immediately.
     $config->save();
   }
 

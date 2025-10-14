@@ -17,6 +17,19 @@ use Drupal\user\UserInterface;
 /**
  * Tests for the AuthDecorator class.
  *
+ * This test class provides comprehensive unit testing for the AuthDecorator
+ * service, which handles email-based authentication for the mail_login module.
+ * All external dependencies are mocked to ensure isolated testing.
+ *
+ * Test Coverage:
+ * - Email lookup functionality with various email formats
+ * - Username fallback behavior when email lookup fails
+ * - Case-sensitive and case-insensitive email matching
+ * - Email-only mode enforcement
+ * - Blocked user handling and error messaging
+ * - Configuration-dependent behavior changes
+ * - Edge cases and security considerations
+ *
  * @group mail_login
  */
 class AuthDecoratorTest extends UnitTestCase {
@@ -79,11 +92,17 @@ class AuthDecoratorTest extends UnitTestCase {
 
   /**
    * {@inheritdoc}
+   *
+   * Sets up the test environment with mocked dependencies for AuthDecorator.
+   * 
+   * This method creates mocks for all external dependencies to ensure complete
+   * isolation during unit testing. The mocks are configured with basic
+   * expectations that are common across multiple test methods.
    */
   protected function setUp(): void {
     parent::setUp();
 
-    // Create mocks for all dependencies.
+    // Create mocks for all dependencies to ensure complete test isolation.
     $this->userAuth = $this->createMock(UserAuthInterface::class);
     $this->entityTypeManager = $this->createMock(EntityTypeManagerInterface::class);
     $this->connection = $this->createMock(Connection::class);
@@ -92,19 +111,19 @@ class AuthDecoratorTest extends UnitTestCase {
     $this->messenger = $this->createMock(MessengerInterface::class);
     $this->userStorage = $this->createMock(EntityStorageInterface::class);
 
-    // Configure config factory to return our config mock.
+    // Configure config factory to return our config mock for mail_login.settings.
     $this->configFactory->expects($this->any())
       ->method('get')
       ->with('mail_login.settings')
       ->willReturn($this->config);
 
-    // Configure entity type manager to return user storage mock.
+    // Configure entity type manager to return user storage mock for 'user' entities.
     $this->entityTypeManager->expects($this->any())
       ->method('getStorage')
       ->with('user')
       ->willReturn($this->userStorage);
 
-    // Create the AuthDecorator instance with mocked dependencies.
+    // Create the AuthDecorator instance with all mocked dependencies.
     $this->authDecorator = new AuthDecorator(
       $this->userAuth,
       $this->entityTypeManager,
@@ -113,7 +132,7 @@ class AuthDecoratorTest extends UnitTestCase {
       $this->messenger
     );
 
-    // Mock the string translation service to avoid container dependency.
+    // Mock the string translation service to avoid container dependency issues.
     $string_translation = $this->getStringTranslationStub();
     $this->authDecorator->setStringTranslation($string_translation);
   }
@@ -129,30 +148,39 @@ class AuthDecoratorTest extends UnitTestCase {
 
   /**
    * Test lookupAccount with a valid email address.
+   *
+   * This test verifies the core email lookup functionality when:
+   * - mail_login is enabled
+   * - A valid email format is provided
+   * - A matching user exists in the system
+   * - The user is not blocked
+   *
+   * Expected behavior: Returns the matching user object.
    */
   public function testLookupAccountWithValidEmail() {
     $email = 'user@example.com';
     $user = $this->createMockUser(123, 'testuser', $email, FALSE);
 
-    // Configure mail_login_enabled = TRUE.
+    // Configure mail_login settings for standard email lookup behavior.
     $this->config->expects($this->any())
       ->method('get')
       ->willReturnMap([
-        ['mail_login_enabled', TRUE],
-        ['mail_login_case_sensitive', TRUE],
-        ['mail_login_email_only', FALSE],
+        ['mail_login_enabled', TRUE],        // Enable email login
+        ['mail_login_case_sensitive', TRUE], // Use exact case matching
+        ['mail_login_email_only', FALSE],    // Allow username fallback
       ]);
 
-    // Mock user storage to return our test user for email lookup.
+    // Mock user storage to return our test user for the email lookup.
+    // This simulates finding a user with the exact email address.
     $this->userStorage->expects($this->once())
       ->method('loadByProperties')
       ->with(['mail' => $email])
       ->willReturn([$user]);
 
-    // Call lookupAccount with valid email.
+    // Call lookupAccount with the valid email address.
     $result = $this->authDecorator->lookupAccount($email);
 
-    // Assert correct user object is returned.
+    // Assert that the correct user object is returned.
     $this->assertSame($user, $result);
   }
 

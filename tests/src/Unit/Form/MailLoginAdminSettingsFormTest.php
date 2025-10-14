@@ -11,6 +11,23 @@ use Drupal\Tests\UnitTestCase;
 /**
  * Tests for the MailLoginAdminSettingsForm class.
  *
+ * This test class provides comprehensive unit testing for the admin settings
+ * form used to configure the mail_login module. All dependencies are mocked
+ * to ensure isolated testing of form building and submission logic.
+ *
+ * Test Coverage:
+ * - Form ID and configuration name validation
+ * - Form structure building with various configuration states
+ * - Form submission and configuration saving
+ * - Edge cases with malicious or unusual input values
+ * - Form state dependencies and conditional field visibility
+ * - Performance considerations for form operations
+ *
+ * Configuration Testing:
+ * - All boolean configuration options (enabled, case_sensitive, email_only, etc.)
+ * - Text field configurations with various input types
+ * - Form state validation and security considerations
+ *
  * @group mail_login
  */
 class MailLoginAdminSettingsFormTest extends UnitTestCase {
