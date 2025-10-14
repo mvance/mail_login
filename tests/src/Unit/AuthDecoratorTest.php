@@ -693,11 +693,17 @@ class AuthDecoratorTest extends UnitTestCase {
   public function testTestIsolation() {
     // Run the same test logic multiple times to ensure consistency
     for ($i = 0; $i < 3; $i++) {
-      $email = 'isolation.test@example.com';
-      $user = $this->createMockUser(999, 'isolationuser', $email, FALSE);
+      $email = "isolation$i.test@example.com";
+      $user = $this->createMockUser(999 + $i, "isolationuser$i", $email, FALSE);
+
+      // Create fresh mocks for each iteration to ensure true isolation
+      $config = $this->createMock(\Drupal\Core\Config\Config::class);
+      $userStorage = $this->createMock(\Drupal\Core\Entity\EntityStorageInterface::class);
+      $configFactory = $this->createMock(\Drupal\Core\Config\ConfigFactoryInterface::class);
+      $entityTypeManager = $this->createMock(\Drupal\Core\Entity\EntityTypeManagerInterface::class);
 
       // Configure fresh mocks for each iteration
-      $this->config->expects($this->any())
+      $config->expects($this->any())
         ->method('get')
         ->willReturnMap([
           ['mail_login_enabled', TRUE],
@@ -705,13 +711,35 @@ class AuthDecoratorTest extends UnitTestCase {
           ['mail_login_email_only', FALSE],
         ]);
 
-      $this->userStorage->expects($this->any())
+      $configFactory->expects($this->any())
+        ->method('get')
+        ->with('mail_login.settings')
+        ->willReturn($config);
+
+      $entityTypeManager->expects($this->any())
+        ->method('getStorage')
+        ->with('user')
+        ->willReturn($userStorage);
+
+      $userStorage->expects($this->once())
         ->method('loadByProperties')
         ->with(['mail' => $email])
         ->willReturn([$user]);
 
+      // Create a fresh AuthDecorator instance for each iteration
+      $authDecorator = new \Drupal\mail_login\AuthDecorator(
+        $this->userAuth,
+        $entityTypeManager,
+        $this->connection,
+        $configFactory,
+        $this->messenger
+      );
+      
+      $string_translation = $this->getStringTranslationStub();
+      $authDecorator->setStringTranslation($string_translation);
+
       // Call the method and verify consistent results
-      $result = $this->authDecorator->lookupAccount($email);
+      $result = $authDecorator->lookupAccount($email);
       $this->assertSame($user, $result, "Test isolation failed on iteration $i");
     }
   }
@@ -766,8 +794,12 @@ class AuthDecoratorTest extends UnitTestCase {
     foreach ($config_options['mail_login_enabled'] as $enabled) {
       foreach ($config_options['mail_login_case_sensitive'] as $case_sensitive) {
         foreach ($config_options['mail_login_email_only'] as $email_only) {
+          // Create fresh mocks for each iteration to avoid conflicts
+          $config = $this->createMock(\Drupal\Core\Config\Config::class);
+          $userStorage = $this->createMock(\Drupal\Core\Entity\EntityStorageInterface::class);
+          
           // Configure the specific combination
-          $this->config->expects($this->any())
+          $config->expects($this->any())
             ->method('get')
             ->willReturnMap([
               ['mail_login_enabled', $enabled],
@@ -775,15 +807,46 @@ class AuthDecoratorTest extends UnitTestCase {
               ['mail_login_email_only', $email_only],
             ]);
 
+          // Mock the config factory to return our test config
+          $configFactory = $this->createMock(\Drupal\Core\Config\ConfigFactoryInterface::class);
+          $configFactory->expects($this->any())
+            ->method('get')
+            ->with('mail_login.settings')
+            ->willReturn($config);
+
+          // Mock entity type manager to return user storage
+          $entityTypeManager = $this->createMock(\Drupal\Core\Entity\EntityTypeManagerInterface::class);
+          $entityTypeManager->expects($this->any())
+            ->method('getStorage')
+            ->with('user')
+            ->willReturn($userStorage);
+
+          // Create a fresh AuthDecorator instance for this test
+          $authDecorator = new \Drupal\mail_login\AuthDecorator(
+            $this->userAuth,
+            $entityTypeManager,
+            $this->connection,
+            $configFactory,
+            $this->messenger
+          );
+          
+          $string_translation = $this->getStringTranslationStub();
+          $authDecorator->setStringTranslation($string_translation);
+
           // Test basic functionality with this configuration
           if ($enabled) {
-            // When enabled, test should work
-            $result = $this->authDecorator->lookupAccount('test@example.com');
-            // Result depends on mocking, but method should not throw exceptions
-            $this->assertTrue(TRUE, "Configuration combination works: enabled=$enabled, case_sensitive=$case_sensitive, email_only=$email_only");
+            // When enabled, mock user storage to return empty array (no user found)
+            $userStorage->expects($this->any())
+              ->method('loadByProperties')
+              ->willReturn([]);
+            
+            // Test should work without throwing exceptions
+            $result = $authDecorator->lookupAccount('test@example.com');
+            // Result should be FALSE since no user was found
+            $this->assertFalse($result, "Configuration combination should return FALSE when no user found: enabled=$enabled, case_sensitive=$case_sensitive, email_only=$email_only");
           } else {
-            // When disabled, should return FALSE
-            $result = $this->authDecorator->lookupAccount('test@example.com');
+            // When disabled, should return FALSE immediately
+            $result = $authDecorator->lookupAccount('test@example.com');
             $this->assertFalse($result, "Disabled configuration should return FALSE");
           }
         }
