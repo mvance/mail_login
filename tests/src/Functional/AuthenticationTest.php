@@ -537,20 +537,19 @@ class AuthenticationTest extends BrowserTestBase {
    *   Optional error message to check for.
    */
   protected function assertLoginFailure($error_message = NULL) {
-    // Should still be on login page or show error.
+    // Should still be on login page for failed login.
     $current_url = $this->getSession()->getCurrentUrl();
     $this->assertTrue(
-      strpos($current_url, '/user/login') !== false || strpos($current_url, '/user') !== false,
-      'Expected to be on login page or user page, but was on: ' . $current_url
+      strpos($current_url, '/user/login') !== false,
+      'Expected to be on login page after failed login, but was on: ' . $current_url
     );
     
     if ($error_message) {
       $this->assertSession()->pageTextContains($error_message);
     }
     
-    // Check that we don't have success indicators.
-    $page_text = $this->getSession()->getPage()->getText();
-    $this->assertStringNotContainsString('Member for', $page_text);
+    // Additional check: should not be redirected to user profile page.
+    $this->assertSession()->addressNotMatches('/\/user\/\d+$/');
   }
 
 }
