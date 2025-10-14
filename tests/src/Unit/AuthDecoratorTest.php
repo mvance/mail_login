@@ -534,6 +534,87 @@ class AuthDecoratorTest extends UnitTestCase {
   }
 
   /**
+   * Test authenticate method with various email formats.
+   *
+   * @dataProvider emailFormatsProvider
+   */
+  public function testAuthenticateWithVariousEmailFormats($email) {
+    $password = 'testpassword';
+    $user = $this->createMockUser(123, 'testuser', $email, FALSE);
+
+    // Configure mail_login_enabled = TRUE.
+    $this->config->expects($this->any())
+      ->method('get')
+      ->willReturnMap([
+        ['mail_login_enabled', TRUE],
+        ['mail_login_case_sensitive', TRUE],
+        ['mail_login_email_only', FALSE],
+      ]);
+
+    // Mock user storage to return our test user for email lookup.
+    $this->userStorage->expects($this->once())
+      ->method('loadByProperties')
+      ->with(['mail' => $email])
+      ->willReturn([$user]);
+
+    // Call authenticate with various email formats.
+    $result = $this->authDecorator->authenticate($email, $password);
+
+    // Assert correct user ID is returned.
+    $this->assertEquals(123, $result);
+  }
+
+  /**
+   * Test authenticate method with edge case scenarios.
+   *
+   * @dataProvider edgeCaseIdentifiersProvider
+   */
+  public function testAuthenticateWithEdgeCaseIdentifiers($identifier) {
+    $password = 'testpassword';
+
+    // Configure mail_login_enabled = TRUE.
+    $this->config->expects($this->any())
+      ->method('get')
+      ->willReturnMap([
+        ['mail_login_enabled', TRUE],
+        ['mail_login_case_sensitive', TRUE],
+        ['mail_login_email_only', FALSE],
+      ]);
+
+    // For edge cases, expect appropriate behavior based on identifier.
+    if (empty($identifier)) {
+      $this->userStorage->expects($this->never())
+        ->method('loadByProperties');
+    } else {
+      if (filter_var($identifier, FILTER_VALIDATE_EMAIL)) {
+        $this->userStorage->expects($this->once())
+          ->method('loadByProperties')
+          ->with(['mail' => $identifier])
+          ->willReturn([]);
+      } else {
+        $this->userStorage->expects($this->once())
+          ->method('loadByProperties')
+          ->with(['name' => $identifier])
+          ->willReturn([]);
+      }
+    }
+
+    // Call authenticate with edge case identifier.
+    $result = $this->authDecorator->authenticate($identifier, $password);
+
+    // For edge cases where no user is found, should fall back to original userAuth.
+    // Since we're using UserAuthInterface (not UserAuthenticationInterface), 
+    // it should call the original authenticate method.
+    if (empty($identifier)) {
+      $this->assertFalse($result);
+    } else {
+      // For non-empty identifiers that don't match users, it falls back to userAuth.
+      // We expect FALSE since no user was found in our mocks.
+      $this->assertFalse($result);
+    }
+  }
+
+  /**
    * Helper method to create a mock user object.
    *
    * @param int $uid

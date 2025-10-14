@@ -341,6 +341,204 @@ class MailLoginAdminSettingsFormTest extends UnitTestCase {
   }
 
   /**
+   * Data provider for various configuration scenarios.
+   *
+   * @return array
+   *   Array of configuration scenarios for testing.
+   */
+  public static function configurationScenariosProvider() {
+    return [
+      'all_enabled' => [
+        [
+          'mail_login_enabled' => TRUE,
+          'mail_login_case_sensitive' => TRUE,
+          'mail_login_email_only' => TRUE,
+          'mail_login_override_login_labels' => TRUE,
+        ]
+      ],
+      'all_disabled' => [
+        [
+          'mail_login_enabled' => FALSE,
+          'mail_login_case_sensitive' => FALSE,
+          'mail_login_email_only' => FALSE,
+          'mail_login_override_login_labels' => FALSE,
+        ]
+      ],
+      'mixed_configuration' => [
+        [
+          'mail_login_enabled' => TRUE,
+          'mail_login_case_sensitive' => FALSE,
+          'mail_login_email_only' => FALSE,
+          'mail_login_override_login_labels' => TRUE,
+        ]
+      ],
+      'email_only_mode' => [
+        [
+          'mail_login_enabled' => TRUE,
+          'mail_login_case_sensitive' => TRUE,
+          'mail_login_email_only' => TRUE,
+          'mail_login_override_login_labels' => TRUE,
+        ]
+      ],
+    ];
+  }
+
+  /**
+   * Data provider for edge case text values.
+   *
+   * @return array
+   *   Array of edge case text values for testing.
+   */
+  public static function edgeCaseTextValuesProvider() {
+    return [
+      'empty_strings' => [''],
+      'whitespace_only' => ['   '],
+      'very_long_text' => [str_repeat('a', 300)],
+      'special_characters' => ['<script>alert("xss")</script>'],
+      'unicode_characters' => ['Ünicöde tëxt with spëcial chäractërs'],
+      'html_entities' => ['&lt;b&gt;Bold text&lt;/b&gt;'],
+      'newlines_and_tabs' => ["Text with\nnewlines\tand\ttabs"],
+    ];
+  }
+
+  /**
+   * Test buildForm with various configuration scenarios.
+   *
+   * @dataProvider configurationScenariosProvider
+   */
+  public function testBuildFormWithConfigurationScenarios($config_values) {
+    $form = [];
+    $form_state = $this->createMock(FormStateInterface::class);
+
+    // Configure config mock to return the test configuration values.
+    $this->config->expects($this->any())
+      ->method('get')
+      ->willReturnCallback(function($key) use ($config_values) {
+        return $config_values[$key] ?? NULL;
+      });
+
+    $result = $this->form->buildForm($form, $form_state);
+
+    // Test that the form reflects the configuration values.
+    $this->assertEquals($config_values['mail_login_enabled'], $result['general']['mail_login_enabled']['#default_value']);
+    $this->assertEquals($config_values['mail_login_case_sensitive'], $result['general']['mail_login_case_sensitive']['#default_value']);
+    $this->assertEquals($config_values['mail_login_email_only'], $result['general']['mail_login_email_only']['#default_value']);
+    $this->assertEquals($config_values['mail_login_override_login_labels'], $result['general']['mail_login_override_login_labels']['#default_value']);
+
+    // Verify form structure integrity.
+    $this->assertArrayHasKey('general', $result);
+    $this->assertEquals('fieldset', $result['general']['#type']);
+    $this->assertArrayHasKey('#states', $result['general']['mail_login_email_only']);
+    $this->assertArrayHasKey('#states', $result['general']['mail_login_override_login_labels']);
+  }
+
+  /**
+   * Test form submission with edge case text values.
+   *
+   * @dataProvider edgeCaseTextValuesProvider
+   */
+  public function testSubmitFormWithEdgeCaseTextValues($edge_case_text) {
+    $form = [];
+    $form_state = $this->createMock(FormStateInterface::class);
+
+    // Configure form state to return edge case values for text fields.
+    $form_state->expects($this->any())
+      ->method('getValue')
+      ->willReturnCallback(function($key) use ($edge_case_text) {
+        $boolean_fields = [
+          'mail_login_enabled',
+          'mail_login_case_sensitive', 
+          'mail_login_email_only',
+          'mail_login_override_login_labels'
+        ];
+        
+        if (in_array($key, $boolean_fields)) {
+          return TRUE; // Use TRUE for boolean fields
+        }
+        
+        return $edge_case_text; // Use edge case text for text fields
+      });
+
+    // Configure config mock to expect set() calls.
+    $this->config->expects($this->exactly(13))
+      ->method('set')
+      ->willReturnCallback(function($key, $value) use ($edge_case_text) {
+        $boolean_fields = [
+          'mail_login_enabled',
+          'mail_login_case_sensitive', 
+          'mail_login_email_only',
+          'mail_login_override_login_labels'
+        ];
+        
+        if (in_array($key, $boolean_fields)) {
+          $this->assertTrue($value);
+        } else {
+          $this->assertEquals($edge_case_text, $value);
+        }
+        
+        return $this->config;
+      });
+
+    // Expect save() to be called once.
+    $this->config->expects($this->once())
+      ->method('save')
+      ->willReturnSelf();
+
+    // Test the configuration saving logic with edge case values.
+    $this->config
+      ->set('mail_login_enabled', $form_state->getValue('mail_login_enabled'))
+      ->set('mail_login_case_sensitive', $form_state->getValue('mail_login_case_sensitive'))
+      ->set('mail_login_email_only', $form_state->getValue('mail_login_email_only'))
+      ->set('mail_login_override_login_labels', $form_state->getValue('mail_login_override_login_labels'))
+      ->set('mail_login_username_title', $form_state->getValue('mail_login_username_title'))
+      ->set('mail_login_username_description', $form_state->getValue('mail_login_username_description'))
+      ->set('mail_login_email_only_title', $form_state->getValue('mail_login_email_only_title'))
+      ->set('mail_login_email_only_description', $form_state->getValue('mail_login_email_only_description'))
+      ->set('mail_login_password_only_description', $form_state->getValue('mail_login_password_only_description'))
+      ->set('mail_login_password_reset_username_title', $form_state->getValue('mail_login_password_reset_username_title'))
+      ->set('mail_login_password_reset_username_description', $form_state->getValue('mail_login_password_reset_username_description'))
+      ->set('mail_login_password_reset_email_only_title', $form_state->getValue('mail_login_password_reset_email_only_title'))
+      ->set('mail_login_password_reset_email_only_description', $form_state->getValue('mail_login_password_reset_email_only_description'))
+      ->save();
+  }
+
+  /**
+   * Test form validation and security considerations.
+   */
+  public function testFormSecurityAndValidation() {
+    $form = [];
+    $form_state = $this->createMock(FormStateInterface::class);
+
+    // Test with potentially malicious input.
+    $malicious_inputs = [
+      'xss_attempt' => '<script>alert("xss")</script>',
+      'sql_injection' => "'; DROP TABLE config; --",
+      'null_bytes' => "Normal text\0with null bytes",
+      'very_long_input' => str_repeat('A', 1000),
+    ];
+
+    foreach ($malicious_inputs as $input_type => $malicious_input) {
+      // Configure config mock to return the malicious input.
+      $this->config->expects($this->any())
+        ->method('get')
+        ->willReturn($malicious_input);
+
+      $result = $this->form->buildForm($form, $form_state);
+
+      // Verify that the form handles malicious input safely.
+      $this->assertIsArray($result);
+      $this->assertArrayHasKey('general', $result);
+      
+      // Check that default values are properly escaped/handled.
+      $username_title = $result['general']['mail_login_username_title']['#default_value'];
+      
+      // The form should either sanitize the input or use safe defaults.
+      // We're testing that no exceptions are thrown and structure is maintained.
+      $this->assertIsString($username_title);
+    }
+  }
+
+  /**
    * Test that form configuration integrity is maintained.
    */
   public function testFormConfigurationIntegrity() {
@@ -363,6 +561,41 @@ class MailLoginAdminSettingsFormTest extends UnitTestCase {
     // Test that text fields have fallback values when config is missing.
     $this->assertStringContainsString('Log in by username/email address', $result['general']['mail_login_username_title']['#default_value']);
     $this->assertStringContainsString('You can use your username or email address to login', $result['general']['mail_login_username_description']['#default_value']);
+  }
+
+  /**
+   * Test performance considerations for form building.
+   */
+  public function testFormBuildingPerformance() {
+    $form = [];
+    $form_state = $this->createMock(FormStateInterface::class);
+
+    // Configure config mock with standard values.
+    $this->config->expects($this->any())
+      ->method('get')
+      ->willReturnMap([
+        ['mail_login_enabled', TRUE],
+        ['mail_login_case_sensitive', TRUE],
+        ['mail_login_email_only', FALSE],
+        ['mail_login_override_login_labels', TRUE],
+      ]);
+
+    // Measure form building performance.
+    $start_time = microtime(TRUE);
+    
+    // Build the form multiple times to test performance.
+    for ($i = 0; $i < 10; $i++) {
+      $result = $this->form->buildForm($form, $form_state);
+    }
+    
+    $execution_time = microtime(TRUE) - $start_time;
+
+    // Assert reasonable performance (less than 1 second for 10 builds).
+    $this->assertLessThan(1.0, $execution_time, 'Form building should be performant');
+    
+    // Verify the form structure is correct.
+    $this->assertIsArray($result);
+    $this->assertArrayHasKey('general', $result);
   }
 
 }

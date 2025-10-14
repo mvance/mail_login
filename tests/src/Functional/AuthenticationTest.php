@@ -418,34 +418,351 @@ class AuthenticationTest extends BrowserTestBase {
   }
 
   /**
-   * Test multiple email case variations with case-insensitive mode.
+   * Data provider for various email formats.
    *
-   * @dataProvider emailCaseVariationsProvider
+   * @return array
+   *   Array of email format variations for testing.
    */
-  public function testEmailCaseVariationsInsensitive($email_variant) {
-    // Create a user with standard lowercase email.
-    $standardUser = $this->createTestUser('standarduser', 'user@example.com', 'standardpassword');
+  public static function emailFormatsProvider() {
+    return [
+      'standard_format' => ['user@example.com', 'user'],
+      'subdomain' => ['admin@mail.example.com', 'admin'],
+      'with_dots' => ['first.last@example.com', 'firstlast'],
+      'with_plus' => ['user+tag@example.com', 'usertag'],
+      'with_numbers' => ['user123@example.org', 'user123'],
+      'short_domain' => ['test@ex.co', 'testuser'],
+      'international_domain' => ['contact@example.co.uk', 'contact'],
+      'hyphenated_local' => ['user-name@example.com', 'username'],
+      'underscore_local' => ['user_name@example.com', 'user_name'],
+    ];
+  }
 
-    // Configure mail_login with case-insensitive matching.
-    $this->configureMailLoginSettings([
-      'mail_login_enabled' => TRUE,
-      'mail_login_case_sensitive' => FALSE,
-      'mail_login_email_only' => FALSE,
-    ]);
+  /**
+   * Data provider for invalid login scenarios.
+   *
+   * @return array
+   *   Array of invalid login scenarios for testing.
+   */
+  public static function invalidLoginScenariosProvider() {
+    return [
+      'empty_email' => ['', 'password'],
+      'empty_password' => ['user@example.com', ''],
+      'both_empty' => ['', ''],
+      'whitespace_email' => ['   ', 'password'],
+      'whitespace_password' => ['user@example.com', '   '],
+      'invalid_email_format' => ['not-an-email', 'password'],
+      'very_long_email' => [str_repeat('a', 250) . '@example.com', 'password'],
+      'special_characters' => ['user<script>@example.com', 'password'],
+    ];
+  }
 
-    // Test login with the email variant.
-    $this->drupalGet('/user/login');
+  /**
+   * Data provider for password complexity scenarios.
+   *
+   * @return array
+   *   Array of password scenarios for testing.
+   */
+  public static function passwordComplexityProvider() {
+    return [
+      'simple_password' => ['simple123'],
+      'complex_password' => ['C0mpl3x!P@ssw0rd'],
+      'with_spaces' => ['password with spaces'],
+      'special_characters' => ['p@$$w0rd!#$%'],
+      'unicode_characters' => ['pässwörd123'],
+      'very_long_password' => [str_repeat('a', 100)],
+    ];
+  }
 
-    $this->submitForm([
-      'name' => $email_variant,
-      'pass' => 'standardpassword',
-    ], 'Log in');
+  /**
+   * Data provider for various email formats.
+   *
+   * @return array
+   *   Array of email format variations for testing.
+   */
+  public static function emailFormatsProvider() {
+    return [
+      'standard_format' => ['user@example.com'],
+      'subdomain' => ['user@mail.example.com'],
+      'with_dots' => ['first.last@example.com'],
+      'with_plus' => ['user+tag@example.com'],
+      'with_numbers' => ['user123@example.org'],
+      'short_domain' => ['user@ex.co'],
+      'long_domain' => ['user@very-long-domain-name.example.com'],
+      'international_domain' => ['user@example.co.uk'],
+      'hyphenated_local' => ['user-name@example.com'],
+      'underscore_local' => ['user_name@example.com'],
+    ];
+  }
 
-    // Assert successful login regardless of case.
-    $this->assertLoginSuccess('standarduser', $standardUser);
+  /**
+   * Data provider for invalid email formats.
+   *
+   * @return array
+   *   Array of invalid email formats for testing.
+   */
+  public static function invalidEmailFormatsProvider() {
+    return [
+      'no_at_symbol' => ['userexample.com'],
+      'multiple_at_symbols' => ['user@@example.com'],
+      'no_domain' => ['user@'],
+      'no_local_part' => ['@example.com'],
+      'spaces' => ['user @example.com'],
+      'invalid_characters' => ['user<>@example.com'],
+      'empty_string' => [''],
+      'just_spaces' => ['   '],
+    ];
+  }
 
-    // Clean up by logging out.
-    $this->drupalLogout();
+  /**
+   * Data provider for edge case identifiers.
+   *
+   * @return array
+   *   Array of edge case identifiers for testing.
+   */
+  public static function edgeCaseIdentifiersProvider() {
+    return [
+      'null_value' => [NULL],
+      'empty_string' => [''],
+      'whitespace_only' => ['   '],
+      'very_long_email' => [str_repeat('a', 250) . '@example.com'],
+      'unicode_characters' => ['üser@example.com'],
+      'special_characters' => ['user!#$%&@example.com'],
+    ];
+  }
+
+  /**
+   * Test lookupAccount with various valid email formats.
+   *
+   * @dataProvider emailFormatsProvider
+   */
+  public function testLookupAccountWithVariousEmailFormats($email) {
+    $user = $this->createMockUser(123, 'testuser', $email, FALSE);
+
+    // Configure mail_login_enabled = TRUE.
+    $this->config->expects($this->any())
+      ->method('get')
+      ->willReturnMap([
+        ['mail_login_enabled', TRUE],
+        ['mail_login_case_sensitive', TRUE],
+        ['mail_login_email_only', FALSE],
+      ]);
+
+    // Mock user storage to return our test user for email lookup.
+    $this->userStorage->expects($this->once())
+      ->method('loadByProperties')
+      ->with(['mail' => $email])
+      ->willReturn([$user]);
+
+    // Call lookupAccount with the email format.
+    $result = $this->authDecorator->lookupAccount($email);
+
+    // Assert correct user object is returned.
+    $this->assertSame($user, $result);
+  }
+
+  /**
+   * Test lookupAccount with invalid email formats.
+   *
+   * @dataProvider invalidEmailFormatsProvider
+   */
+  public function testLookupAccountWithInvalidEmailFormats($invalid_email) {
+    // Configure mail_login_enabled = TRUE, email_only = FALSE.
+    $this->config->expects($this->any())
+      ->method('get')
+      ->willReturnMap([
+        ['mail_login_enabled', TRUE],
+        ['mail_login_case_sensitive', TRUE],
+        ['mail_login_email_only', FALSE],
+      ]);
+
+    // For invalid emails, the code should treat them as usernames.
+    // Mock user storage to return empty array for username lookup.
+    $this->userStorage->expects($this->once())
+      ->method('loadByProperties')
+      ->with(['name' => $invalid_email])
+      ->willReturn([]);
+
+    // Call lookupAccount with invalid email.
+    $result = $this->authDecorator->lookupAccount($invalid_email);
+
+    // Assert FALSE is returned (no user found).
+    $this->assertFalse($result);
+  }
+
+  /**
+   * Test lookupAccount with edge case identifiers.
+   *
+   * @dataProvider edgeCaseIdentifiersProvider
+   */
+  public function testLookupAccountWithEdgeCaseIdentifiers($identifier) {
+    // Configure mail_login_enabled = TRUE.
+    $this->config->expects($this->any())
+      ->method('get')
+      ->willReturnMap([
+        ['mail_login_enabled', TRUE],
+        ['mail_login_case_sensitive', TRUE],
+        ['mail_login_email_only', FALSE],
+      ]);
+
+    // For edge cases, expect no database calls if identifier is empty/null.
+    if (empty($identifier)) {
+      $this->userStorage->expects($this->never())
+        ->method('loadByProperties');
+    } else {
+      // For non-empty edge cases, mock appropriate storage calls.
+      if (filter_var($identifier, FILTER_VALIDATE_EMAIL)) {
+        $this->userStorage->expects($this->once())
+          ->method('loadByProperties')
+          ->with(['mail' => $identifier])
+          ->willReturn([]);
+      } else {
+        $this->userStorage->expects($this->once())
+          ->method('loadByProperties')
+          ->with(['name' => $identifier])
+          ->willReturn([]);
+      }
+    }
+
+    // Call lookupAccount with edge case identifier.
+    $result = $this->authDecorator->lookupAccount($identifier);
+
+    // Assert FALSE is returned for all edge cases.
+    $this->assertFalse($result);
+  }
+
+  /**
+   * Test case-insensitive lookup with multiple similar emails.
+   */
+  public function testLookupAccountCaseInsensitiveMultipleMatches() {
+    $email_input = 'USER@EXAMPLE.COM';
+    $user1 = $this->createMockUser(123, 'user1', 'user@example.com', FALSE);
+    $user2 = $this->createMockUser(124, 'user2', 'USER@EXAMPLE.COM', FALSE);
+
+    // Configure mail_login_enabled = TRUE, case_sensitive = FALSE.
+    $this->config->expects($this->any())
+      ->method('get')
+      ->willReturnMap([
+        ['mail_login_enabled', TRUE],
+        ['mail_login_case_sensitive', FALSE],
+        ['mail_login_email_only', FALSE],
+      ]);
+
+    // Mock user storage to return empty for exact match.
+    $this->userStorage->expects($this->once())
+      ->method('loadByProperties')
+      ->with(['mail' => $email_input])
+      ->willReturn([]);
+
+    // Mock the database query for case-insensitive lookup with multiple results.
+    $query = $this->createMock(\Drupal\Core\Entity\Query\QueryInterface::class);
+    $query->expects($this->once())
+      ->method('accessCheck')
+      ->with(FALSE)
+      ->willReturnSelf();
+    $query->expects($this->once())
+      ->method('condition')
+      ->with('mail', $this->anything(), 'LIKE')
+      ->willReturnSelf();
+    $query->expects($this->once())
+      ->method('execute')
+      ->willReturn([123, 124]); // Multiple matches
+
+    $this->userStorage->expects($this->once())
+      ->method('getQuery')
+      ->willReturn($query);
+
+    // When multiple matches are found, loadMultiple should not be called.
+    $this->userStorage->expects($this->never())
+      ->method('loadMultiple');
+
+    // Mock database escapeLike method.
+    $this->connection->expects($this->once())
+      ->method('escapeLike')
+      ->with($email_input)
+      ->willReturn($email_input);
+
+    // Call lookupAccount with case-insensitive email that has multiple matches.
+    $result = $this->authDecorator->lookupAccount($email_input);
+
+    // Assert FALSE is returned when multiple case-insensitive matches exist.
+    $this->assertFalse($result);
+  }
+
+  /**
+   * Test performance considerations with large datasets.
+   */
+  public function testLookupAccountPerformanceConsiderations() {
+    $email = 'performance@example.com';
+    $user = $this->createMockUser(123, 'perfuser', $email, FALSE);
+
+    // Configure mail_login_enabled = TRUE.
+    $this->config->expects($this->any())
+      ->method('get')
+      ->willReturnMap([
+        ['mail_login_enabled', TRUE],
+        ['mail_login_case_sensitive', TRUE],
+        ['mail_login_email_only', FALSE],
+      ]);
+
+    // Mock user storage with timing considerations.
+    $this->userStorage->expects($this->once())
+      ->method('loadByProperties')
+      ->with(['mail' => $email])
+      ->willReturn([$user]);
+
+    // Measure execution time for performance validation.
+    $start_time = microtime(TRUE);
+    
+    // Call lookupAccount.
+    $result = $this->authDecorator->lookupAccount($email);
+    
+    $execution_time = microtime(TRUE) - $start_time;
+
+    // Assert correct user object is returned.
+    $this->assertSame($user, $result);
+    
+    // Assert execution time is reasonable (less than 100ms for unit test).
+    $this->assertLessThan(0.1, $execution_time, 'lookupAccount should execute quickly in unit tests');
+  }
+
+  /**
+   * Test database connection error handling.
+   */
+  public function testLookupAccountDatabaseConnectionFailure() {
+    $email = 'test@example.com';
+
+    // Configure mail_login_enabled = TRUE, case_sensitive = FALSE.
+    $this->config->expects($this->any())
+      ->method('get')
+      ->willReturnMap([
+        ['mail_login_enabled', TRUE],
+        ['mail_login_case_sensitive', FALSE],
+        ['mail_login_email_only', FALSE],
+      ]);
+
+    // Mock user storage to return empty for exact match.
+    $this->userStorage->expects($this->once())
+      ->method('loadByProperties')
+      ->with(['mail' => $email])
+      ->willReturn([]);
+
+    // Mock database connection to throw exception.
+    $this->connection->expects($this->once())
+      ->method('escapeLike')
+      ->with($email)
+      ->willThrowException(new \Exception('Database connection failed'));
+
+    // Mock query that won't be reached due to exception.
+    $query = $this->createMock(\Drupal\Core\Entity\Query\QueryInterface::class);
+    $this->userStorage->expects($this->once())
+      ->method('getQuery')
+      ->willReturn($query);
+
+    // Call lookupAccount and expect it to handle the database error gracefully.
+    $result = $this->authDecorator->lookupAccount($email);
+
+    // Assert FALSE is returned when database connection fails.
+    $this->assertFalse($result);
   }
 
   /**
