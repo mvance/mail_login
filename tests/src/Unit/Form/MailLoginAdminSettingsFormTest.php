@@ -244,10 +244,29 @@ class MailLoginAdminSettingsFormTest extends UnitTestCase {
       ->method('save')
       ->willReturnSelf();
 
-    // Test that the form would save the configuration correctly.
-    // We can't call submitForm() directly due to container dependencies,
-    // but we've already verified the config mock receives the expected calls.
-    $this->assertTrue(TRUE, 'Configuration saving logic verified through mock expectations');
+    // Actually call submitForm to trigger the config set() calls.
+    // We need to use reflection to access the protected config() method.
+    $reflection = new \ReflectionClass($this->form);
+    $configMethod = $reflection->getMethod('config');
+    $configMethod->setAccessible(TRUE);
+    
+    // Mock the config() method to return our mock config object.
+    $formMock = $this->getMockBuilder(get_class($this->form))
+      ->setConstructorArgs([$this->configFactory])
+      ->onlyMethods(['config'])
+      ->getMock();
+    
+    $formMock->expects($this->once())
+      ->method('config')
+      ->with('mail_login.settings')
+      ->willReturn($this->config);
+    
+    // Set string translation on the mock.
+    $string_translation = $this->getStringTranslationStub();
+    $formMock->setStringTranslation($string_translation);
+    
+    // Call submitForm on the mock.
+    $formMock->submitForm($form, $form_state);
   }
 
   /**
@@ -308,10 +327,29 @@ class MailLoginAdminSettingsFormTest extends UnitTestCase {
       ->method('save')
       ->willReturnSelf();
 
-    // Test that the form would save the configuration correctly.
-    // We can't call submitForm() directly due to container dependencies,
-    // but we've already verified the config mock receives the expected calls.
-    $this->assertTrue(TRUE, 'Configuration saving logic verified through mock expectations');
+    // Actually call submitForm to trigger the config set() calls.
+    // We need to use reflection to access the protected config() method.
+    $reflection = new \ReflectionClass($this->form);
+    $configMethod = $reflection->getMethod('config');
+    $configMethod->setAccessible(TRUE);
+    
+    // Mock the config() method to return our mock config object.
+    $formMock = $this->getMockBuilder(get_class($this->form))
+      ->setConstructorArgs([$this->configFactory])
+      ->onlyMethods(['config'])
+      ->getMock();
+    
+    $formMock->expects($this->once())
+      ->method('config')
+      ->with('mail_login.settings')
+      ->willReturn($this->config);
+    
+    // Set string translation on the mock.
+    $string_translation = $this->getStringTranslationStub();
+    $formMock->setStringTranslation($string_translation);
+    
+    // Call submitForm on the mock.
+    $formMock->submitForm($form, $form_state);
   }
 
   /**
