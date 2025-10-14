@@ -12,6 +12,7 @@ use Drupal\mail_login\AuthDecorator;
 use Drupal\Tests\UnitTestCase;
 use Drupal\user\UserAuthInterface;
 use Drupal\user\UserAuthenticationInterface;
+use Drupal\user\UserInterface;
 
 /**
  * Tests for the AuthDecorator class.
@@ -120,6 +121,72 @@ class AuthDecoratorTest extends UnitTestCase {
     $this->assertInstanceOf(AuthDecorator::class, $this->authDecorator);
     $this->assertInstanceOf(UserAuthInterface::class, $this->authDecorator);
     $this->assertInstanceOf(UserAuthenticationInterface::class, $this->authDecorator);
+  }
+
+  /**
+   * Test lookupAccount with a valid email address.
+   */
+  public function testLookupAccountWithValidEmail() {
+    $email = 'user@example.com';
+    $user = $this->createMockUser(123, 'testuser', $email, FALSE);
+
+    // Configure mail_login_enabled = TRUE.
+    $this->config->expects($this->any())
+      ->method('get')
+      ->willReturnMap([
+        ['mail_login_enabled', TRUE],
+        ['mail_login_case_sensitive', TRUE],
+        ['mail_login_email_only', FALSE],
+      ]);
+
+    // Mock user storage to return our test user for email lookup.
+    $this->userStorage->expects($this->once())
+      ->method('loadByProperties')
+      ->with(['mail' => $email])
+      ->willReturn([$user]);
+
+    // Call lookupAccount with valid email.
+    $result = $this->authDecorator->lookupAccount($email);
+
+    // Assert correct user object is returned.
+    $this->assertSame($user, $result);
+  }
+
+  /**
+   * Helper method to create a mock user object.
+   *
+   * @param int $uid
+   *   The user ID.
+   * @param string $username
+   *   The username.
+   * @param string $email
+   *   The email address.
+   * @param bool $blocked
+   *   Whether the user is blocked.
+   *
+   * @return \Drupal\user\UserInterface|\PHPUnit\Framework\MockObject\MockObject
+   *   The mocked user object.
+   */
+  protected function createMockUser($uid, $username, $email, $blocked = FALSE) {
+    $user = $this->createMock(UserInterface::class);
+    
+    $user->expects($this->any())
+      ->method('id')
+      ->willReturn($uid);
+    
+    $user->expects($this->any())
+      ->method('getAccountName')
+      ->willReturn($username);
+    
+    $user->expects($this->any())
+      ->method('getEmail')
+      ->willReturn($email);
+    
+    $user->expects($this->any())
+      ->method('isBlocked')
+      ->willReturn($blocked);
+    
+    return $user;
   }
 
 }

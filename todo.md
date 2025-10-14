@@ -27,15 +27,15 @@
   - [x] Add proper docblocks
 
 ### Core Unit Tests - Email Lookup
-- [ ] **Prompt 3: Implement Basic Email Lookup Test**
-  - [ ] Create `testLookupAccountWithValidEmail()` method
-  - [ ] Configure config mock for mail_login_enabled = TRUE
-  - [ ] Mock user storage for valid email lookup
-  - [ ] Mock unblocked user object
-  - [ ] Test lookupAccount() with valid email
-  - [ ] Assert correct user object returned
-  - [ ] Add helper methods for mock user creation
-  - [ ] Follow behavioral assertion strategy
+- [x] **Prompt 3: Implement Basic Email Lookup Test**
+  - [x] Create `testLookupAccountWithValidEmail()` method
+  - [x] Configure config mock for mail_login_enabled = TRUE
+  - [x] Mock user storage for valid email lookup
+  - [x] Mock unblocked user object
+  - [x] Test lookupAccount() with valid email
+  - [x] Assert correct user object returned
+  - [x] Add helper methods for mock user creation
+  - [x] Follow behavioral assertion strategy
 
 ### Configuration-Dependent Tests
 - [ ] **Prompt 4: Add Username Fallback and Email-Only Mode Tests**
