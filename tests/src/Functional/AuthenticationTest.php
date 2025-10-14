@@ -392,7 +392,7 @@ class AuthenticationTest extends BrowserTestBase {
     $this->drupalGet('/user/login');
 
     $this->submitForm([
-      'name' => 'Test@Example.Com',
+      'name' => 'Lower@Example.Com',
       'pass' => 'lowerpassword',
     ], 'Log in');
 
