@@ -15,16 +15,16 @@
   - [x] Verify test can run successfully
 
 ### Unit Test Foundation
-- [ ] **Prompt 2: Add Basic Mocking Infrastructure**
-  - [ ] Add protected properties for all main mocks
-  - [ ] Mock UserAuthInterface/UserAuthenticationInterface
-  - [ ] Mock EntityTypeManagerInterface
-  - [ ] Mock ConfigFactoryInterface and Config
-  - [ ] Mock Connection (database)
-  - [ ] Mock MessengerInterface
-  - [ ] Create AuthDecorator instance with mocked dependencies
-  - [ ] Replace placeholder test with instantiation test
-  - [ ] Add proper docblocks
+- [x] **Prompt 2: Add Basic Mocking Infrastructure**
+  - [x] Add protected properties for all main mocks
+  - [x] Mock UserAuthInterface/UserAuthenticationInterface
+  - [x] Mock EntityTypeManagerInterface
+  - [x] Mock ConfigFactoryInterface and Config
+  - [x] Mock Connection (database)
+  - [x] Mock MessengerInterface
+  - [x] Create AuthDecorator instance with mocked dependencies
+  - [x] Replace placeholder test with instantiation test
+  - [x] Add proper docblocks
 
 ### Core Unit Tests - Email Lookup
 - [ ] **Prompt 3: Implement Basic Email Lookup Test**
