@@ -392,11 +392,12 @@ class AuthenticationTest extends BrowserTestBase {
     $this->drupalGet('/user/login');
 
     $this->submitForm([
-      'name' => 'Lower@Example.Com',
+      'name' => 'LOWER@EXAMPLE.COM',
       'pass' => 'lowerpassword',
     ], 'Log in');
 
     // This should fail because case-sensitive mode requires exact email match.
+    // Using all caps to ensure a definitive case mismatch with 'lower@example.com'.
     $this->assertLoginFailure();
   }
 
