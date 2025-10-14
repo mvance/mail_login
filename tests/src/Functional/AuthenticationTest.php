@@ -338,9 +338,9 @@ class AuthenticationTest extends BrowserTestBase {
    * Test case-sensitive email login functionality.
    */
   public function testCaseSensitiveEmailLogin() {
-    // Create users with different case emails.
-    $lowerUser = $this->createTestUser('loweruser', 'test@example.com', 'lowerpassword');
-    $upperUser = $this->createTestUser('upperuser', 'TEST@EXAMPLE.COM', 'upperpassword');
+    // Create users with different emails that have different cases.
+    $lowerUser = $this->createTestUser('loweruser', 'lower@example.com', 'lowerpassword');
+    $upperUser = $this->createTestUser('upperuser', 'UPPER@EXAMPLE.COM', 'upperpassword');
 
     // Configure mail_login with case-sensitive matching.
     $this->configureMailLoginSettings([
@@ -353,7 +353,7 @@ class AuthenticationTest extends BrowserTestBase {
     $this->drupalGet('/user/login');
 
     $this->submitForm([
-      'name' => 'test@example.com',
+      'name' => 'lower@example.com',
       'pass' => 'lowerpassword',
     ], 'Log in');
 
