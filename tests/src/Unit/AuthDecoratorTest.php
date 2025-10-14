@@ -623,6 +623,12 @@ class AuthDecoratorTest extends UnitTestCase {
     if (empty($identifier)) {
       $this->userStorage->expects($this->never())
         ->method('loadByProperties');
+      
+      // For empty identifiers, the original userAuth should be called as fallback
+      $this->userAuth->expects($this->once())
+        ->method('authenticate')
+        ->with($identifier, $password)
+        ->willReturn(FALSE);
     } else {
       if (filter_var($identifier, FILTER_VALIDATE_EMAIL)) {
         $this->userStorage->expects($this->once())
@@ -635,21 +641,19 @@ class AuthDecoratorTest extends UnitTestCase {
           ->with(['name' => $identifier])
           ->willReturn([]);
       }
+      
+      // For non-empty identifiers that don't match users, it falls back to userAuth
+      $this->userAuth->expects($this->once())
+        ->method('authenticate')
+        ->with($identifier, $password)
+        ->willReturn(FALSE);
     }
 
     // Call authenticate with edge case identifier.
     $result = $this->authDecorator->authenticate($identifier, $password);
 
-    // For edge cases where no user is found, should fall back to original userAuth.
-    // Since we're using UserAuthInterface (not UserAuthenticationInterface), 
-    // it should call the original authenticate method.
-    if (empty($identifier)) {
-      $this->assertFalse($result);
-    } else {
-      // For non-empty identifiers that don't match users, it falls back to userAuth.
-      // We expect FALSE since no user was found in our mocks.
-      $this->assertFalse($result);
-    }
+    // For all edge cases where no user is found, should return FALSE from fallback
+    $this->assertFalse($result);
   }
 
   /**
