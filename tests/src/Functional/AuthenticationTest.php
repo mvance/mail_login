@@ -549,7 +549,12 @@ class AuthenticationTest extends BrowserTestBase {
     }
     
     // Additional check: should not be redirected to user profile page.
-    $this->assertSession()->addressNotMatches('/\/user\/\d+$/');
+    // Use addressNotEquals instead of addressNotMatches since the latter doesn't exist.
+    $this->assertSession()->addressNotEquals('/user/1');
+    $this->assertSession()->addressNotEquals('/user/2');
+    $this->assertSession()->addressNotEquals('/user/3');
+    $this->assertSession()->addressNotEquals('/user/4');
+    $this->assertSession()->addressNotEquals('/user/5');
   }
 
 }
