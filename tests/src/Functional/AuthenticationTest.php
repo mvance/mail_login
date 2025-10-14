@@ -845,6 +845,239 @@ class AuthenticationTest extends BrowserTestBase {
   }
 
   /**
+   * Test validation method to ensure functional test isolation.
+   *
+   * This method verifies that functional tests don't interfere with each other
+   * by testing the same functionality multiple times.
+   */
+  public function testFunctionalTestIsolation() {
+    // Run the same login test multiple times to ensure isolation
+    for ($i = 0; $i < 3; $i++) {
+      // Create a unique user for each iteration
+      $user = $this->createTestUser("isolationuser$i", "isolation$i@example.com", "password$i");
+
+      // Configure mail_login
+      $this->configureMailLoginSettings([
+        'mail_login_enabled' => TRUE,
+        'mail_login_case_sensitive' => TRUE,
+        'mail_login_email_only' => FALSE,
+      ]);
+
+      // Test login
+      $this->drupalGet('/user/login');
+      $this->submitForm([
+        'name' => "isolation$i@example.com",
+        'pass' => "password$i",
+      ], 'Log in');
+
+      // Assert successful login
+      $this->assertLoginSuccess("isolationuser$i", $user);
+
+      // Log out to clean up for next iteration
+      $this->drupalLogout();
+    }
+  }
+
+  /**
+   * Test validation method to verify error handling in functional tests.
+   *
+   * This method ensures that functional tests properly handle error conditions
+   * and don't break when unexpected situations occur.
+   */
+  public function testFunctionalErrorHandling() {
+    // Test with non-existent configuration
+    $this->configureMailLoginSettings([
+      'mail_login_enabled' => TRUE,
+      'mail_login_case_sensitive' => TRUE,
+      'mail_login_email_only' => FALSE,
+    ]);
+
+    // Test login with completely invalid data
+    $this->drupalGet('/user/login');
+    
+    // Submit form with invalid data that might cause errors
+    $this->submitForm([
+      'name' => str_repeat('x', 1000), // Very long username
+      'pass' => '',                    // Empty password
+    ], 'Log in');
+
+    // Should handle gracefully without fatal errors
+    $this->assertLoginFailure();
+    
+    // Verify no PHP errors occurred
+    $page_text = $this->getSession()->getPage()->getText();
+    $this->assertStringNotContainsString('Fatal error', $page_text);
+    $this->assertStringNotContainsString('Warning:', $page_text);
+    $this->assertStringNotContainsString('Notice:', $page_text);
+  }
+
+  /**
+   * Test validation method to verify security considerations.
+   *
+   * This method ensures that the authentication system properly handles
+   * security-related scenarios and doesn't leak sensitive information.
+   */
+  public function testSecurityValidation() {
+    // Configure mail_login
+    $this->configureMailLoginSettings([
+      'mail_login_enabled' => TRUE,
+      'mail_login_case_sensitive' => TRUE,
+      'mail_login_email_only' => FALSE,
+    ]);
+
+    // Create a test user
+    $user = $this->createTestUser('securityuser', 'security@example.com', 'securepassword');
+
+    // Test that sensitive information is not leaked in error messages
+    $this->drupalGet('/user/login');
+    $this->submitForm([
+      'name' => 'security@example.com',
+      'pass' => 'wrongpassword',
+    ], 'Log in');
+
+    $page_text = $this->getSession()->getPage()->getText();
+    
+    // Ensure no sensitive information is leaked
+    $this->assertStringNotContainsString('securepassword', $page_text);
+    $this->assertStringNotContainsString('database', $page_text);
+    $this->assertStringNotContainsString('SQL', $page_text);
+    $this->assertStringNotContainsString('mysql', $page_text);
+    $this->assertStringNotContainsString('Exception', $page_text);
+    
+    // Verify generic error message is shown
+    $this->assertTrue(
+      strpos($page_text, 'Unrecognized username or password') !== false ||
+      strpos($page_text, 'Sorry, unrecognized username or password') !== false ||
+      strpos($page_text, 'Invalid username or password') !== false,
+      'Expected generic error message not found'
+    );
+  }
+
+  /**
+   * Test validation method to verify all configuration scenarios work.
+   *
+   * This method ensures that all configuration combinations are properly
+   * tested and work as expected in functional scenarios.
+   */
+  public function testConfigurationScenarioValidation() {
+    // Test all major configuration combinations
+    $config_scenarios = [
+      'basic_enabled' => [
+        'mail_login_enabled' => TRUE,
+        'mail_login_case_sensitive' => TRUE,
+        'mail_login_email_only' => FALSE,
+      ],
+      'case_insensitive' => [
+        'mail_login_enabled' => TRUE,
+        'mail_login_case_sensitive' => FALSE,
+        'mail_login_email_only' => FALSE,
+      ],
+      'email_only' => [
+        'mail_login_enabled' => TRUE,
+        'mail_login_case_sensitive' => TRUE,
+        'mail_login_email_only' => TRUE,
+      ],
+      'disabled' => [
+        'mail_login_enabled' => FALSE,
+        'mail_login_case_sensitive' => TRUE,
+        'mail_login_email_only' => FALSE,
+      ],
+    ];
+
+    foreach ($config_scenarios as $scenario_name => $config) {
+      // Create a unique user for this scenario
+      $user = $this->createTestUser("config$scenario_name", "config$scenario_name@example.com", "password$scenario_name");
+
+      // Apply configuration
+      $this->configureMailLoginSettings($config);
+
+      // Test login behavior based on configuration
+      $this->drupalGet('/user/login');
+
+      if ($config['mail_login_enabled']) {
+        // When enabled, email login should work
+        $this->submitForm([
+          'name' => "config$scenario_name@example.com",
+          'pass' => "password$scenario_name",
+        ], 'Log in');
+
+        $this->assertLoginSuccess("config$scenario_name", $user);
+        $this->drupalLogout();
+
+        // Test username behavior based on email_only setting
+        $this->drupalGet('/user/login');
+        $this->submitForm([
+          'name' => "config$scenario_name",
+          'pass' => "password$scenario_name",
+        ], 'Log in');
+
+        if ($config['mail_login_email_only']) {
+          // Should fail with email-only mode
+          $this->assertLoginFailure();
+        } else {
+          // Should succeed with username fallback
+          $this->assertLoginSuccess("config$scenario_name", $user);
+          $this->drupalLogout();
+        }
+      } else {
+        // When disabled, email login should not work
+        $this->submitForm([
+          'name' => "config$scenario_name@example.com",
+          'pass' => "password$scenario_name",
+        ], 'Log in');
+
+        $this->assertLoginFailure();
+
+        // But username login should still work
+        $this->drupalGet('/user/login');
+        $this->submitForm([
+          'name' => "config$scenario_name",
+          'pass' => "password$scenario_name",
+        ], 'Log in');
+
+        $this->assertLoginSuccess("config$scenario_name", $user);
+        $this->drupalLogout();
+      }
+    }
+  }
+
+  /**
+   * Test validation method to verify performance requirements.
+   *
+   * This method ensures that functional tests complete within reasonable
+   * time limits for development workflow integration.
+   */
+  public function testFunctionalPerformanceValidation() {
+    $start_time = microtime(TRUE);
+
+    // Configure mail_login
+    $this->configureMailLoginSettings([
+      'mail_login_enabled' => TRUE,
+      'mail_login_case_sensitive' => TRUE,
+      'mail_login_email_only' => FALSE,
+    ]);
+
+    // Perform multiple login operations to test performance
+    for ($i = 0; $i < 3; $i++) {
+      $user = $this->createTestUser("perfuser$i", "perf$i@example.com", "password$i");
+
+      $this->drupalGet('/user/login');
+      $this->submitForm([
+        'name' => "perf$i@example.com",
+        'pass' => "password$i",
+      ], 'Log in');
+
+      $this->assertLoginSuccess("perfuser$i", $user);
+      $this->drupalLogout();
+    }
+
+    $execution_time = microtime(TRUE) - $start_time;
+
+    // Functional tests should complete in reasonable time (< 60 seconds for 3 logins)
+    $this->assertLessThan(60, $execution_time, 'Functional test performance requirement not met');
+  }
+
+  /**
    * Helper method to assert login failure.
    *
    * @param string $error_message

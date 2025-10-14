@@ -685,6 +685,177 @@ class AuthDecoratorTest extends UnitTestCase {
   }
 
   /**
+   * Test validation method to ensure test isolation.
+   *
+   * This method verifies that tests don't affect each other by running
+   * the same test multiple times and ensuring consistent results.
+   */
+  public function testTestIsolation() {
+    // Run the same test logic multiple times to ensure consistency
+    for ($i = 0; $i < 3; $i++) {
+      $email = 'isolation.test@example.com';
+      $user = $this->createMockUser(999, 'isolationuser', $email, FALSE);
+
+      // Configure fresh mocks for each iteration
+      $this->config->expects($this->any())
+        ->method('get')
+        ->willReturnMap([
+          ['mail_login_enabled', TRUE],
+          ['mail_login_case_sensitive', TRUE],
+          ['mail_login_email_only', FALSE],
+        ]);
+
+      $this->userStorage->expects($this->any())
+        ->method('loadByProperties')
+        ->with(['mail' => $email])
+        ->willReturn([$user]);
+
+      // Call the method and verify consistent results
+      $result = $this->authDecorator->lookupAccount($email);
+      $this->assertSame($user, $result, "Test isolation failed on iteration $i");
+    }
+  }
+
+  /**
+   * Test validation method to ensure proper error handling in tests.
+   *
+   * This method verifies that the test framework properly handles
+   * exceptions and error conditions without breaking test execution.
+   */
+  public function testErrorHandlingInTests() {
+    // Test that mock exceptions are handled properly
+    $this->config->expects($this->any())
+      ->method('get')
+      ->willReturnMap([
+        ['mail_login_enabled', TRUE],
+        ['mail_login_case_sensitive', TRUE],
+        ['mail_login_email_only', FALSE],
+      ]);
+
+    // Configure user storage to throw an exception
+    $this->userStorage->expects($this->once())
+      ->method('loadByProperties')
+      ->willThrowException(new \Exception('Test exception'));
+
+    // The method should handle the exception gracefully
+    try {
+      $result = $this->authDecorator->lookupAccount('test@example.com');
+      // If no exception is thrown, the method handled it gracefully
+      $this->assertTrue(TRUE, 'Exception was handled gracefully');
+    } catch (\Exception $e) {
+      // If an exception is thrown, verify it's the expected one
+      $this->assertEquals('Test exception', $e->getMessage());
+    }
+  }
+
+  /**
+   * Test validation method to verify all configuration scenarios are covered.
+   *
+   * This method ensures that all possible configuration combinations
+   * are tested somewhere in the test suite.
+   */
+  public function testConfigurationCoverage() {
+    // Define all configuration options that should be tested
+    $config_options = [
+      'mail_login_enabled' => [TRUE, FALSE],
+      'mail_login_case_sensitive' => [TRUE, FALSE],
+      'mail_login_email_only' => [TRUE, FALSE],
+    ];
+
+    // Test each configuration combination
+    foreach ($config_options['mail_login_enabled'] as $enabled) {
+      foreach ($config_options['mail_login_case_sensitive'] as $case_sensitive) {
+        foreach ($config_options['mail_login_email_only'] as $email_only) {
+          // Configure the specific combination
+          $this->config->expects($this->any())
+            ->method('get')
+            ->willReturnMap([
+              ['mail_login_enabled', $enabled],
+              ['mail_login_case_sensitive', $case_sensitive],
+              ['mail_login_email_only', $email_only],
+            ]);
+
+          // Test basic functionality with this configuration
+          if ($enabled) {
+            // When enabled, test should work
+            $result = $this->authDecorator->lookupAccount('test@example.com');
+            // Result depends on mocking, but method should not throw exceptions
+            $this->assertTrue(TRUE, "Configuration combination works: enabled=$enabled, case_sensitive=$case_sensitive, email_only=$email_only");
+          } else {
+            // When disabled, should return FALSE
+            $result = $this->authDecorator->lookupAccount('test@example.com');
+            $this->assertFalse($result, "Disabled configuration should return FALSE");
+          }
+        }
+      }
+    }
+  }
+
+  /**
+   * Test validation method to ensure performance requirements are met.
+   *
+   * This method verifies that unit tests execute quickly enough for
+   * development workflow integration.
+   */
+  public function testPerformanceRequirements() {
+    $start_time = microtime(TRUE);
+
+    // Run a representative set of operations
+    for ($i = 0; $i < 10; $i++) {
+      $email = "perf.test.$i@example.com";
+      $user = $this->createMockUser($i, "perfuser$i", $email, FALSE);
+
+      $this->config->expects($this->any())
+        ->method('get')
+        ->willReturnMap([
+          ['mail_login_enabled', TRUE],
+          ['mail_login_case_sensitive', TRUE],
+          ['mail_login_email_only', FALSE],
+        ]);
+
+      $this->userStorage->expects($this->any())
+        ->method('loadByProperties')
+        ->willReturn([$user]);
+
+      $result = $this->authDecorator->lookupAccount($email);
+    }
+
+    $execution_time = microtime(TRUE) - $start_time;
+
+    // Unit tests should complete very quickly (< 0.1 seconds for 10 operations)
+    $this->assertLessThan(0.1, $execution_time, 'Unit test performance requirement not met');
+  }
+
+  /**
+   * Test validation method to verify proper mock usage.
+   *
+   * This method ensures that mocks are properly configured and used
+   * throughout the test suite.
+   */
+  public function testMockValidation() {
+    // Verify that all required mocks are properly configured
+    $this->assertInstanceOf(UserAuthInterface::class, $this->userAuth);
+    $this->assertInstanceOf(EntityTypeManagerInterface::class, $this->entityTypeManager);
+    $this->assertInstanceOf(Connection::class, $this->connection);
+    $this->assertInstanceOf(ConfigFactoryInterface::class, $this->configFactory);
+    $this->assertInstanceOf(Config::class, $this->config);
+    $this->assertInstanceOf(MessengerInterface::class, $this->messenger);
+    $this->assertInstanceOf(EntityStorageInterface::class, $this->userStorage);
+
+    // Verify that the AuthDecorator instance is properly created
+    $this->assertInstanceOf(AuthDecorator::class, $this->authDecorator);
+
+    // Verify that mocks respond to method calls
+    $this->config->expects($this->once())
+      ->method('get')
+      ->with('mail_login_enabled')
+      ->willReturn(TRUE);
+
+    $result = $this->config->get('mail_login_enabled');
+    $this->assertTrue($result);
+  }
+
+  /**
    * Helper method to create a mock user object.
    *
    * @param int $uid

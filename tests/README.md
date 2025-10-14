@@ -64,6 +64,41 @@ The test suite covers:
 
 ## Running Tests
 
+### Quick Test Execution Scripts
+
+The test suite includes convenient scripts for common testing scenarios:
+
+```bash
+# Quick smoke test - validates core functionality
+bash web/modules/contrib/mail_login/tests/smoke-test.sh
+
+# Comprehensive test runner with options
+bash web/modules/contrib/mail_login/tests/run-tests.sh [OPTIONS] [TEST_TYPE]
+
+# Full test validation and quality assurance
+bash web/modules/contrib/mail_login/tests/validate-tests.sh
+```
+
+### Test Runner Script Usage
+
+The `run-tests.sh` script provides flexible test execution:
+
+```bash
+# Run all tests
+bash web/modules/contrib/mail_login/tests/run-tests.sh
+
+# Run specific test types
+bash web/modules/contrib/mail_login/tests/run-tests.sh unit
+bash web/modules/contrib/mail_login/tests/run-tests.sh functional
+bash web/modules/contrib/mail_login/tests/run-tests.sh smoke
+
+# Run with options
+bash web/modules/contrib/mail_login/tests/run-tests.sh -v unit          # Verbose unit tests
+bash web/modules/contrib/mail_login/tests/run-tests.sh -c all           # All tests with coverage
+bash web/modules/contrib/mail_login/tests/run-tests.sh -s functional    # Stop on first failure
+bash web/modules/contrib/mail_login/tests/run-tests.sh -f testEmail     # Filter by test name
+```
+
 ### Individual Test Files
 
 Run specific test files to focus on particular functionality:
@@ -169,6 +204,50 @@ The test suite validates various email formats:
 - International domains: `contact@example.co.uk`
 - Edge cases: Very long emails, Unicode characters
 
+## Test Validation and Quality Assurance
+
+### Automated Test Validation
+
+The test suite includes comprehensive validation tools:
+
+```bash
+# Run complete test validation
+bash web/modules/contrib/mail_login/tests/validate-tests.sh
+```
+
+This validation script checks:
+- **Test Isolation**: Ensures tests don't affect each other
+- **Performance Requirements**: Verifies tests complete within time limits
+- **Code Quality**: Checks namespace declarations, use statements, docblocks
+- **Configuration Coverage**: Validates all config options are tested
+- **Error Message Testing**: Ensures proper error handling
+
+### Quality Gates
+
+The test suite enforces these quality standards:
+
+- **Unit Test Performance**: < 5 seconds total execution time
+- **Functional Test Performance**: < 120 seconds total execution time
+- **Test Isolation**: Consistent results across multiple runs
+- **Code Standards**: Proper Drupal coding conventions
+- **Configuration Coverage**: All mail_login settings tested
+- **Error Handling**: Graceful handling of edge cases and failures
+
+### Continuous Integration
+
+For CI/CD integration, use these commands:
+
+```bash
+# Quick validation for pull requests
+bash web/modules/contrib/mail_login/tests/smoke-test.sh
+
+# Full validation for releases
+bash web/modules/contrib/mail_login/tests/validate-tests.sh
+
+# Generate coverage reports (requires Xdebug)
+bash web/modules/contrib/mail_login/tests/run-tests.sh -c all
+```
+
 ## Troubleshooting Common Issues
 
 ### Test Failures
@@ -196,6 +275,18 @@ echo $SIMPLETEST_DB
 # Increase timeout in phpunit.xml if needed
 # Check web server is running and accessible
 # Verify no conflicting modules are interfering
+```
+
+#### Test validation failures
+```bash
+# Run individual validation components
+bash web/modules/contrib/mail_login/tests/validate-tests.sh
+
+# Check specific test isolation
+./vendor/bin/phpunit -c web/core/phpunit.xml.dist web/modules/contrib/mail_login/tests/ --filter testTestIsolation
+
+# Verify performance requirements
+./vendor/bin/phpunit -c web/core/phpunit.xml.dist web/modules/contrib/mail_login/tests/ --filter testPerformance
 ```
 
 ### Performance Issues

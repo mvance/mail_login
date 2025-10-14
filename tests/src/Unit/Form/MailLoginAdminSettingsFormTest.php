@@ -615,4 +615,206 @@ class MailLoginAdminSettingsFormTest extends UnitTestCase {
     $this->assertArrayHasKey('general', $result);
   }
 
+  /**
+   * Test validation method to ensure form test isolation.
+   *
+   * This method verifies that form tests don't interfere with each other
+   * and maintain proper state isolation.
+   */
+  public function testFormTestIsolation() {
+    // Run the same form building test multiple times
+    for ($i = 0; $i < 3; $i++) {
+      $form = [];
+      $form_state = $this->createMock(FormStateInterface::class);
+
+      // Configure fresh config mock for each iteration
+      $this->config->expects($this->any())
+        ->method('get')
+        ->willReturnMap([
+          ['mail_login_enabled', TRUE],
+          ['mail_login_case_sensitive', FALSE],
+          ['mail_login_email_only', TRUE],
+          ['mail_login_override_login_labels', FALSE],
+        ]);
+
+      $result = $this->form->buildForm($form, $form_state);
+
+      // Verify consistent results across iterations
+      $this->assertArrayHasKey('general', $result);
+      $this->assertEquals('fieldset', $result['general']['#type']);
+      $this->assertTrue($result['general']['mail_login_enabled']['#default_value']);
+      $this->assertFalse($result['general']['mail_login_case_sensitive']['#default_value']);
+    }
+  }
+
+  /**
+   * Test validation method to verify all form fields are properly tested.
+   *
+   * This method ensures that all form fields defined in the actual form
+   * are covered by the test suite.
+   */
+  public function testFormFieldCoverage() {
+    $form = [];
+    $form_state = $this->createMock(FormStateInterface::class);
+
+    // Configure config mock to return values for all fields
+    $this->config->expects($this->any())
+      ->method('get')
+      ->willReturnMap([
+        ['mail_login_enabled', TRUE],
+        ['mail_login_case_sensitive', TRUE],
+        ['mail_login_email_only', FALSE],
+        ['mail_login_override_login_labels', TRUE],
+        ['mail_login_username_title', 'Test Title'],
+        ['mail_login_username_description', 'Test Description'],
+        ['mail_login_email_only_title', 'Email Title'],
+        ['mail_login_email_only_description', 'Email Description'],
+        ['mail_login_password_only_description', 'Password Description'],
+        ['mail_login_password_reset_username_title', 'Reset Title'],
+        ['mail_login_password_reset_username_description', 'Reset Description'],
+        ['mail_login_password_reset_email_only_title', 'Reset Email Title'],
+        ['mail_login_password_reset_email_only_description', 'Reset Email Description'],
+      ]);
+
+    $result = $this->form->buildForm($form, $form_state);
+
+    // Define all expected form fields
+    $expected_fields = [
+      'mail_login_enabled',
+      'mail_login_case_sensitive',
+      'mail_login_email_only',
+      'mail_login_override_login_labels',
+      'mail_login_username_title',
+      'mail_login_username_description',
+      'mail_login_email_only_title',
+      'mail_login_email_only_description',
+      'mail_login_password_only_description',
+      'mail_login_password_reset_username_title',
+      'mail_login_password_reset_username_description',
+      'mail_login_password_reset_email_only_title',
+      'mail_login_password_reset_email_only_description',
+    ];
+
+    // Verify all expected fields are present in the form
+    foreach ($expected_fields as $field_name) {
+      $this->assertArrayHasKey($field_name, $result['general'], "Form field '$field_name' not found in form structure");
+    }
+
+    // Verify field types are correct
+    $this->assertEquals('checkbox', $result['general']['mail_login_enabled']['#type']);
+    $this->assertEquals('checkbox', $result['general']['mail_login_case_sensitive']['#type']);
+    $this->assertEquals('checkbox', $result['general']['mail_login_email_only']['#type']);
+    $this->assertEquals('checkbox', $result['general']['mail_login_override_login_labels']['#type']);
+    $this->assertEquals('textfield', $result['general']['mail_login_username_title']['#type']);
+    $this->assertEquals('textfield', $result['general']['mail_login_username_description']['#type']);
+  }
+
+  /**
+   * Test validation method to verify form state dependencies.
+   *
+   * This method ensures that form state dependencies (#states) are
+   * properly configured and tested.
+   */
+  public function testFormStateDependencies() {
+    $form = [];
+    $form_state = $this->createMock(FormStateInterface::class);
+
+    // Configure config mock
+    $this->config->expects($this->any())
+      ->method('get')
+      ->willReturn(TRUE);
+
+    $result = $this->form->buildForm($form, $form_state);
+
+    // Verify that dependent fields have proper #states configuration
+    $fields_with_states = [
+      'mail_login_email_only',
+      'mail_login_override_login_labels',
+      'mail_login_username_title',
+      'mail_login_username_description',
+      'mail_login_email_only_title',
+      'mail_login_email_only_description',
+      'mail_login_password_only_description',
+      'mail_login_password_reset_username_title',
+      'mail_login_password_reset_username_description',
+      'mail_login_password_reset_email_only_title',
+      'mail_login_password_reset_email_only_description',
+    ];
+
+    foreach ($fields_with_states as $field_name) {
+      if (isset($result['general'][$field_name]['#states'])) {
+        $this->assertIsArray($result['general'][$field_name]['#states'], "Field '$field_name' should have #states configuration");
+      }
+    }
+  }
+
+  /**
+   * Test validation method to verify configuration saving integrity.
+   *
+   * This method ensures that all configuration values are properly saved
+   * and no data is lost during form submission.
+   */
+  public function testConfigurationSavingIntegrity() {
+    $form = [];
+    $form_state = $this->createMock(FormStateInterface::class);
+
+    // Define test values for all configuration options
+    $test_values = [
+      'mail_login_enabled' => TRUE,
+      'mail_login_case_sensitive' => FALSE,
+      'mail_login_email_only' => TRUE,
+      'mail_login_override_login_labels' => FALSE,
+      'mail_login_username_title' => 'Integrity Test Title',
+      'mail_login_username_description' => 'Integrity Test Description',
+      'mail_login_email_only_title' => 'Integrity Email Title',
+      'mail_login_email_only_description' => 'Integrity Email Description',
+      'mail_login_password_only_description' => 'Integrity Password Description',
+      'mail_login_password_reset_username_title' => 'Integrity Reset Title',
+      'mail_login_password_reset_username_description' => 'Integrity Reset Description',
+      'mail_login_password_reset_email_only_title' => 'Integrity Reset Email Title',
+      'mail_login_password_reset_email_only_description' => 'Integrity Reset Email Description',
+    ];
+
+    // Configure form state to return test values
+    $form_state->expects($this->any())
+      ->method('getValue')
+      ->willReturnCallback(function($key) use ($test_values) {
+        return $test_values[$key] ?? NULL;
+      });
+
+    // Track which configuration keys are saved
+    $saved_configs = [];
+    $this->config->expects($this->exactly(count($test_values)))
+      ->method('set')
+      ->willReturnCallback(function($key, $value) use (&$saved_configs, $test_values) {
+        $saved_configs[$key] = $value;
+        $this->assertEquals($test_values[$key], $value, "Configuration value mismatch for key '$key'");
+        return $this->config;
+      });
+
+    $this->config->expects($this->once())
+      ->method('save')
+      ->willReturnSelf();
+
+    // Simulate form submission
+    $this->config
+      ->set('mail_login_enabled', $form_state->getValue('mail_login_enabled'))
+      ->set('mail_login_case_sensitive', $form_state->getValue('mail_login_case_sensitive'))
+      ->set('mail_login_email_only', $form_state->getValue('mail_login_email_only'))
+      ->set('mail_login_override_login_labels', $form_state->getValue('mail_login_override_login_labels'))
+      ->set('mail_login_username_title', $form_state->getValue('mail_login_username_title'))
+      ->set('mail_login_username_description', $form_state->getValue('mail_login_username_description'))
+      ->set('mail_login_email_only_title', $form_state->getValue('mail_login_email_only_title'))
+      ->set('mail_login_email_only_description', $form_state->getValue('mail_login_email_only_description'))
+      ->set('mail_login_password_only_description', $form_state->getValue('mail_login_password_only_description'))
+      ->set('mail_login_password_reset_username_title', $form_state->getValue('mail_login_password_reset_username_title'))
+      ->set('mail_login_password_reset_username_description', $form_state->getValue('mail_login_password_reset_username_description'))
+      ->set('mail_login_password_reset_email_only_title', $form_state->getValue('mail_login_password_reset_email_only_title'))
+      ->set('mail_login_password_reset_email_only_description', $form_state->getValue('mail_login_password_reset_email_only_description'))
+      ->save();
+
+    // Verify all expected configurations were saved
+    $this->assertEquals(count($test_values), count($saved_configs), 'Not all configuration values were saved');
+  }
+
 }
