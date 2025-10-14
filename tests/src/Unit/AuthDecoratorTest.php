@@ -840,6 +840,22 @@ class AuthDecoratorTest extends UnitTestCase {
               ->method('loadByProperties')
               ->willReturn([]);
             
+            // Mock getQuery method to avoid null pointer errors in case-insensitive path
+            $query = $this->createMock(\Drupal\Core\Entity\Query\QueryInterface::class);
+            $query->expects($this->any())
+              ->method('accessCheck')
+              ->willReturnSelf();
+            $query->expects($this->any())
+              ->method('condition')
+              ->willReturnSelf();
+            $query->expects($this->any())
+              ->method('execute')
+              ->willReturn([]);
+            
+            $userStorage->expects($this->any())
+              ->method('getQuery')
+              ->willReturn($query);
+            
             // Test should work without throwing exceptions
             $result = $authDecorator->lookupAccount('test@example.com');
             // Result should be FALSE since no user was found
