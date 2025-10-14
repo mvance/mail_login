@@ -93,18 +93,18 @@
   - [x] Add helper methods for login success/failure assertions
 
 ### Core Functional Tests
-- [ ] **Prompt 8: Implement Core Functional Login Tests**
-  - [ ] Create `testEmailLoginSuccess()` method
-  - [ ] Create test user with email and password
-  - [ ] Enable mail_login in configuration
-  - [ ] Perform login via email address
-  - [ ] Verify successful login (check for "Member for" text)
-  - [ ] Create `testUsernameLoginSuccess()` method
-  - [ ] Test login via username (fallback behavior)
-  - [ ] Verify successful login
-  - [ ] Create `testMailLoginDisabledFallsBackToUsername()` method
-  - [ ] Test behavior when mail_login disabled
-  - [ ] Verify username login still works
+- [x] **Prompt 8: Implement Core Functional Login Tests**
+  - [x] Create `testEmailLoginSuccess()` method
+  - [x] Create test user with email and password
+  - [x] Enable mail_login in configuration
+  - [x] Perform login via email address
+  - [x] Verify successful login (check for "Member for" text)
+  - [x] Create `testUsernameLoginSuccess()` method
+  - [x] Test login via username (fallback behavior)
+  - [x] Verify successful login
+  - [x] Create `testMailLoginDisabledFallsBackToUsername()` method
+  - [x] Test behavior when mail_login disabled
+  - [x] Verify username login still works
 
 ### Functional Error Scenarios
 - [ ] **Prompt 9: Add Functional Tests for Email-Only Mode and Error Scenarios**

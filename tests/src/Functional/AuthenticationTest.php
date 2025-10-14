@@ -61,6 +61,94 @@ class AuthenticationTest extends BrowserTestBase {
   }
 
   /**
+   * Test successful login using email address.
+   */
+  public function testEmailLoginSuccess() {
+    // Configure mail_login to be enabled.
+    $this->configureMailLoginSettings([
+      'mail_login_enabled' => TRUE,
+      'mail_login_case_sensitive' => TRUE,
+      'mail_login_email_only' => FALSE,
+    ]);
+
+    // Go to login page.
+    $this->drupalGet('/user/login');
+
+    // Submit login form with email address.
+    $this->submitForm([
+      'name' => 'test@example.com',
+      'pass' => 'testpassword',
+    ], 'Log in');
+
+    // Assert successful login.
+    $this->assertLoginSuccess('testuser');
+  }
+
+  /**
+   * Test successful login using username (fallback behavior).
+   */
+  public function testUsernameLoginSuccess() {
+    // Configure mail_login to be enabled with username fallback.
+    $this->configureMailLoginSettings([
+      'mail_login_enabled' => TRUE,
+      'mail_login_case_sensitive' => TRUE,
+      'mail_login_email_only' => FALSE,
+    ]);
+
+    // Go to login page.
+    $this->drupalGet('/user/login');
+
+    // Submit login form with username.
+    $this->submitForm([
+      'name' => 'testuser',
+      'pass' => 'testpassword',
+    ], 'Log in');
+
+    // Assert successful login.
+    $this->assertLoginSuccess('testuser');
+  }
+
+  /**
+   * Test that when mail login is disabled, username login still works.
+   */
+  public function testMailLoginDisabledFallsBackToUsername() {
+    // Configure mail_login to be disabled.
+    $this->configureMailLoginSettings([
+      'mail_login_enabled' => FALSE,
+      'mail_login_case_sensitive' => TRUE,
+      'mail_login_email_only' => FALSE,
+    ]);
+
+    // Go to login page.
+    $this->drupalGet('/user/login');
+
+    // Submit login form with username (should work).
+    $this->submitForm([
+      'name' => 'testuser',
+      'pass' => 'testpassword',
+    ], 'Log in');
+
+    // Assert successful login.
+    $this->assertLoginSuccess('testuser');
+
+    // Log out for next test.
+    $this->drupalLogout();
+
+    // Go to login page again.
+    $this->drupalGet('/user/login');
+
+    // Submit login form with email (should also work via standard Drupal behavior).
+    $this->submitForm([
+      'name' => 'test@example.com',
+      'pass' => 'testpassword',
+    ], 'Log in');
+
+    // This might fail since mail_login is disabled, but that's expected behavior.
+    // We'll just verify we're still on the login page.
+    $this->assertSession()->addressEquals('/user/login');
+  }
+
+  /**
    * Helper method to create a test user with email and password.
    *
    * @param string $username

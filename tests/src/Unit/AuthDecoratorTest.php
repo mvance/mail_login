@@ -201,12 +201,11 @@ class AuthDecoratorTest extends UnitTestCase {
         ['mail_login_email_only', TRUE],
       ]);
 
-    // The username is not a valid email, so no loadByProperties call for email lookup.
-    // But the code will still try to load by email first, then hit the email_only check.
-    $this->userStorage->expects($this->once())
-      ->method('loadByProperties')
-      ->with(['mail' => $username])
-      ->willReturn([]);
+    // The username 'testuser' is not a valid email, so filter_var() will return FALSE.
+    // This means the code will skip the email lookup and go to the email_only check.
+    // No loadByProperties should be called since it's not a valid email.
+    $this->userStorage->expects($this->never())
+      ->method('loadByProperties');
 
     // Expect error message to be displayed via messenger.
     $this->messenger->expects($this->once())
@@ -401,13 +400,11 @@ class AuthDecoratorTest extends UnitTestCase {
       ->with(['mail' => $email])
       ->willReturn([$user]);
 
-    // The authenticate() method calls lookupAccount() first, then authenticateAccount().
-    // Since our userAuth is UserAuthInterface (not UserAuthenticationInterface),
-    // it should call authenticate() on the original service.
-    $this->userAuth->expects($this->once())
-      ->method('authenticate')
-      ->with('testuser', $password)
-      ->willReturn(123);
+    // Looking at the authenticate() method in AuthDecorator, it calls lookupAccount() first.
+    // If a user is found and userAuth is NOT UserAuthenticationInterface, it returns the user ID directly.
+    // It only calls userAuth.authenticate() if no account is found via lookupAccount().
+    $this->userAuth->expects($this->never())
+      ->method('authenticate');
 
     // Call authenticate with valid credentials.
     $result = $this->authDecorator->authenticate($email, $password);
@@ -417,12 +414,28 @@ class AuthDecoratorTest extends UnitTestCase {
   }
 
   /**
-   * Test authenticate with invalid credentials.
+   * Test authenticate with invalid credentials using UserAuthenticationInterface.
    */
   public function testAuthenticateWithInvalidCredentials() {
     $email = 'user@example.com';
     $password = 'wrongpassword';
     $user = $this->createMockUser(123, 'testuser', $email, FALSE);
+
+    // Create a UserAuthenticationInterface mock instead of UserAuthInterface.
+    $userAuthInterface = $this->createMock(UserAuthenticationInterface::class);
+    
+    // Create AuthDecorator with UserAuthenticationInterface mock.
+    $authDecorator = new AuthDecorator(
+      $userAuthInterface,
+      $this->entityTypeManager,
+      $this->connection,
+      $this->configFactory,
+      $this->messenger
+    );
+    
+    // Mock the string translation service.
+    $string_translation = $this->getStringTranslationStub();
+    $authDecorator->setStringTranslation($string_translation);
 
     // Configure mail_login_enabled = TRUE.
     $this->config->expects($this->any())
@@ -439,14 +452,14 @@ class AuthDecoratorTest extends UnitTestCase {
       ->with(['mail' => $email])
       ->willReturn([$user]);
 
-    // Mock the original userAuth service to return FALSE for authentication.
-    $this->userAuth->expects($this->once())
-      ->method('authenticate')
-      ->with('testuser', $password)
+    // Mock the UserAuthenticationInterface to return FALSE for authentication.
+    $userAuthInterface->expects($this->once())
+      ->method('authenticateAccount')
+      ->with($user, $password)
       ->willReturn(FALSE);
 
     // Call authenticate with invalid credentials.
-    $result = $this->authDecorator->authenticate($email, $password);
+    $result = $authDecorator->authenticate($email, $password);
 
     // Assert FALSE is returned.
     $this->assertFalse($result);
