@@ -72,7 +72,12 @@ class MailLoginAdminSettingsFormTest extends UnitTestCase {
    * Test that getEditableConfigNames returns the correct config names.
    */
   public function testGetEditableConfigNames() {
-    $config_names = $this->form->getEditableConfigNames();
+    // Use reflection to access the protected method
+    $reflection = new \ReflectionClass($this->form);
+    $method = $reflection->getMethod('getEditableConfigNames');
+    $method->setAccessible(TRUE);
+    
+    $config_names = $method->invoke($this->form);
     $expected = ['mail_login.settings'];
     $this->assertEquals($expected, $config_names);
   }
@@ -210,22 +215,29 @@ class MailLoginAdminSettingsFormTest extends UnitTestCase {
     // Configure config mock to expect set() calls with correct values.
     $this->config->expects($this->exactly(13))
       ->method('set')
-      ->withConsecutive(
-        ['mail_login_enabled', TRUE],
-        ['mail_login_case_sensitive', FALSE],
-        ['mail_login_email_only', TRUE],
-        ['mail_login_override_login_labels', TRUE],
-        ['mail_login_username_title', 'Test Username Title'],
-        ['mail_login_username_description', 'Test Username Description'],
-        ['mail_login_email_only_title', 'Test Email Title'],
-        ['mail_login_email_only_description', 'Test Email Description'],
-        ['mail_login_password_only_description', 'Test Password Description'],
-        ['mail_login_password_reset_username_title', 'Test Reset Username Title'],
-        ['mail_login_password_reset_username_description', 'Test Reset Username Description'],
-        ['mail_login_password_reset_email_only_title', 'Test Reset Email Title'],
-        ['mail_login_password_reset_email_only_description', 'Test Reset Email Description']
-      )
-      ->willReturnSelf();
+      ->willReturnCallback(function($key, $value) {
+        // Verify the expected key-value pairs
+        $expected_values = [
+          'mail_login_enabled' => TRUE,
+          'mail_login_case_sensitive' => FALSE,
+          'mail_login_email_only' => TRUE,
+          'mail_login_override_login_labels' => TRUE,
+          'mail_login_username_title' => 'Test Username Title',
+          'mail_login_username_description' => 'Test Username Description',
+          'mail_login_email_only_title' => 'Test Email Title',
+          'mail_login_email_only_description' => 'Test Email Description',
+          'mail_login_password_only_description' => 'Test Password Description',
+          'mail_login_password_reset_username_title' => 'Test Reset Username Title',
+          'mail_login_password_reset_username_description' => 'Test Reset Username Description',
+          'mail_login_password_reset_email_only_title' => 'Test Reset Email Title',
+          'mail_login_password_reset_email_only_description' => 'Test Reset Email Description',
+        ];
+        
+        $this->assertArrayHasKey($key, $expected_values);
+        $this->assertEquals($expected_values[$key], $value);
+        
+        return $this->config;
+      });
 
     // Expect save() to be called once.
     $this->config->expects($this->once())
@@ -265,22 +277,29 @@ class MailLoginAdminSettingsFormTest extends UnitTestCase {
     // Configure config mock to expect set() calls with minimal values.
     $this->config->expects($this->exactly(13))
       ->method('set')
-      ->withConsecutive(
-        ['mail_login_enabled', FALSE],
-        ['mail_login_case_sensitive', TRUE],
-        ['mail_login_email_only', FALSE],
-        ['mail_login_override_login_labels', FALSE],
-        ['mail_login_username_title', ''],
-        ['mail_login_username_description', ''],
-        ['mail_login_email_only_title', ''],
-        ['mail_login_email_only_description', ''],
-        ['mail_login_password_only_description', ''],
-        ['mail_login_password_reset_username_title', ''],
-        ['mail_login_password_reset_username_description', ''],
-        ['mail_login_password_reset_email_only_title', ''],
-        ['mail_login_password_reset_email_only_description', '']
-      )
-      ->willReturnSelf();
+      ->willReturnCallback(function($key, $value) {
+        // Verify the expected key-value pairs
+        $expected_values = [
+          'mail_login_enabled' => FALSE,
+          'mail_login_case_sensitive' => TRUE,
+          'mail_login_email_only' => FALSE,
+          'mail_login_override_login_labels' => FALSE,
+          'mail_login_username_title' => '',
+          'mail_login_username_description' => '',
+          'mail_login_email_only_title' => '',
+          'mail_login_email_only_description' => '',
+          'mail_login_password_only_description' => '',
+          'mail_login_password_reset_username_title' => '',
+          'mail_login_password_reset_username_description' => '',
+          'mail_login_password_reset_email_only_title' => '',
+          'mail_login_password_reset_email_only_description' => '',
+        ];
+        
+        $this->assertArrayHasKey($key, $expected_values);
+        $this->assertEquals($expected_values[$key], $value);
+        
+        return $this->config;
+      });
 
     // Expect save() to be called once.
     $this->config->expects($this->once())
