@@ -73,12 +73,12 @@ check_test_performance() {
     
     # Unit tests should be fast (< 5 seconds total)
     echo "Measuring unit test performance..."
-    start_time=$(date +%s.%N)
+    start_time=$(date +%s)
     if $PHPUNIT_CMD $PHPUNIT_CONFIG $TEST_PATH/src/Unit/ > /tmp/unit_perf.log 2>&1; then
-        end_time=$(date +%s.%N)
-        duration=$(echo "$end_time - $start_time" | bc -l)
+        end_time=$(date +%s)
+        duration=$((end_time - start_time))
         
-        if (( $(echo "$duration < 5.0" | bc -l) )); then
+        if [ $duration -lt 5 ]; then
             echo -e "${GREEN}✓ Unit tests completed in ${duration}s (< 5s target)${NC}"
         else
             echo -e "${YELLOW}⚠ Unit tests took ${duration}s (> 5s, consider optimization)${NC}"
@@ -90,12 +90,12 @@ check_test_performance() {
     
     # Functional tests allowed to be slower (< 120 seconds)
     echo "Measuring functional test performance..."
-    start_time=$(date +%s.%N)
+    start_time=$(date +%s)
     if $PHPUNIT_CMD $PHPUNIT_CONFIG $TEST_PATH/src/Functional/ > /tmp/functional_perf.log 2>&1; then
-        end_time=$(date +%s.%N)
-        duration=$(echo "$end_time - $start_time" | bc -l)
+        end_time=$(date +%s)
+        duration=$((end_time - start_time))
         
-        if (( $(echo "$duration < 120.0" | bc -l) )); then
+        if [ $duration -lt 120 ]; then
             echo -e "${GREEN}✓ Functional tests completed in ${duration}s (< 120s target)${NC}"
         else
             echo -e "${YELLOW}⚠ Functional tests took ${duration}s (> 120s, may need optimization)${NC}"
