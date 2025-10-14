@@ -149,6 +149,138 @@ class AuthenticationTest extends BrowserTestBase {
   }
 
   /**
+   * Test email-only mode rejects username login.
+   */
+  public function testEmailOnlyModeRejectsUsername() {
+    // Configure mail_login with email-only mode enabled.
+    $this->configureMailLoginSettings([
+      'mail_login_enabled' => TRUE,
+      'mail_login_case_sensitive' => TRUE,
+      'mail_login_email_only' => TRUE,
+    ]);
+
+    // Go to login page.
+    $this->drupalGet('/user/login');
+
+    // Attempt login with username (should fail).
+    $this->submitForm([
+      'name' => 'testuser',
+      'pass' => 'testpassword',
+    ], 'Log in');
+
+    // Verify error message appears and login fails.
+    $this->assertLoginFailure('Login by username has been disabled');
+
+    // Now test successful login with email address.
+    $this->drupalGet('/user/login');
+
+    // Submit login form with email address (should work).
+    $this->submitForm([
+      'name' => 'test@example.com',
+      'pass' => 'testpassword',
+    ], 'Log in');
+
+    // Assert successful login.
+    $this->assertLoginSuccess('testuser');
+  }
+
+  /**
+   * Test blocked user login failure.
+   */
+  public function testBlockedUserLoginFailure() {
+    // Create a blocked user account.
+    $blockedUser = $this->createTestUser('blockeduser', 'blocked@example.com', 'blockedpassword', TRUE);
+
+    // Configure mail_login to be enabled.
+    $this->configureMailLoginSettings([
+      'mail_login_enabled' => TRUE,
+      'mail_login_case_sensitive' => TRUE,
+      'mail_login_email_only' => FALSE,
+    ]);
+
+    // Go to login page.
+    $this->drupalGet('/user/login');
+
+    // Attempt login with blocked user's email.
+    $this->submitForm([
+      'name' => 'blocked@example.com',
+      'pass' => 'blockedpassword',
+    ], 'Log in');
+
+    // Verify appropriate error message and login failure.
+    $this->assertLoginFailure('The user has not been activated yet or is blocked');
+
+    // Also test with username.
+    $this->drupalGet('/user/login');
+
+    // Attempt login with blocked user's username.
+    $this->submitForm([
+      'name' => 'blockeduser',
+      'pass' => 'blockedpassword',
+    ], 'Log in');
+
+    // Verify appropriate error message and login failure.
+    $this->assertLoginFailure('The user has not been activated yet or is blocked');
+  }
+
+  /**
+   * Test invalid credentials show appropriate error.
+   */
+  public function testInvalidCredentialsShowError() {
+    // Configure mail_login to be enabled.
+    $this->configureMailLoginSettings([
+      'mail_login_enabled' => TRUE,
+      'mail_login_case_sensitive' => TRUE,
+      'mail_login_email_only' => FALSE,
+    ]);
+
+    // Go to login page.
+    $this->drupalGet('/user/login');
+
+    // Test login with wrong password via email.
+    $this->submitForm([
+      'name' => 'test@example.com',
+      'pass' => 'wrongpassword',
+    ], 'Log in');
+
+    // Verify error message display and ensure no sensitive information is leaked.
+    $this->assertLoginFailure();
+    $page_text = $this->getSession()->getPage()->getText();
+    
+    // Check for generic error message (exact text may vary by Drupal version).
+    $this->assertTrue(
+      strpos($page_text, 'Unrecognized username or password') !== false ||
+      strpos($page_text, 'Sorry, unrecognized username or password') !== false ||
+      strpos($page_text, 'Invalid username or password') !== false,
+      'Expected to find login error message, but got: ' . substr($page_text, 0, 500)
+    );
+
+    // Ensure no sensitive information is leaked.
+    $this->assertStringNotContainsString('testpassword', $page_text);
+    $this->assertStringNotContainsString('database', $page_text);
+
+    // Test login with wrong password via username.
+    $this->drupalGet('/user/login');
+
+    $this->submitForm([
+      'name' => 'testuser',
+      'pass' => 'wrongpassword',
+    ], 'Log in');
+
+    // Verify error message display.
+    $this->assertLoginFailure();
+    $page_text = $this->getSession()->getPage()->getText();
+    
+    // Check for generic error message.
+    $this->assertTrue(
+      strpos($page_text, 'Unrecognized username or password') !== false ||
+      strpos($page_text, 'Sorry, unrecognized username or password') !== false ||
+      strpos($page_text, 'Invalid username or password') !== false,
+      'Expected to find login error message, but got: ' . substr($page_text, 0, 500)
+    );
+  }
+
+  /**
    * Helper method to create a test user with email and password.
    *
    * @param string $username

@@ -107,20 +107,20 @@
   - [x] Verify username login still works
 
 ### Functional Error Scenarios
-- [ ] **Prompt 9: Add Functional Tests for Email-Only Mode and Error Scenarios**
-  - [ ] Create `testEmailOnlyModeRejectsUsername()` method
-  - [ ] Enable mail_login_email_only mode
-  - [ ] Attempt login with username
-  - [ ] Verify error message appears and login fails
-  - [ ] Test successful login with email address
-  - [ ] Create `testBlockedUserLoginFailure()` method
-  - [ ] Create blocked user account
-  - [ ] Attempt login
-  - [ ] Verify appropriate error message and login failure
-  - [ ] Create `testInvalidCredentialsShowError()` method
-  - [ ] Test login with wrong password
-  - [ ] Verify error message display
-  - [ ] Ensure no sensitive information leaked
+- [x] **Prompt 9: Add Functional Tests for Email-Only Mode and Error Scenarios**
+  - [x] Create `testEmailOnlyModeRejectsUsername()` method
+  - [x] Enable mail_login_email_only mode
+  - [x] Attempt login with username
+  - [x] Verify error message appears and login fails
+  - [x] Test successful login with email address
+  - [x] Create `testBlockedUserLoginFailure()` method
+  - [x] Create blocked user account
+  - [x] Attempt login
+  - [x] Verify appropriate error message and login failure
+  - [x] Create `testInvalidCredentialsShowError()` method
+  - [x] Test login with wrong password
+  - [x] Verify error message display
+  - [x] Ensure no sensitive information leaked
 
 ### Case Sensitivity Functional Tests
 - [ ] **Prompt 10: Add Case Sensitivity Functional Tests**
