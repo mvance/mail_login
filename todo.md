@@ -67,18 +67,18 @@
   - [x] Ensure FALSE returned for blocked users
 
 ### Authentication Methods
-- [ ] **Prompt 6: Add Authentication Method Tests**
-  - [ ] Create `testAuthenticateWithValidCredentials()` method
-  - [ ] Test complete authenticate() flow
-  - [ ] Mock successful lookupAccount() and userAuth.authenticate()
-  - [ ] Verify correct user ID returned
-  - [ ] Create `testAuthenticateWithInvalidCredentials()` method
-  - [ ] Test failed authentication scenarios
-  - [ ] Verify FALSE returned for invalid credentials
-  - [ ] Create `testAuthenticateAccountMethod()` method
-  - [ ] Test authenticateAccount() wrapper method
-  - [ ] Handle UserAuthenticationInterface and legacy UserAuthInterface
-  - [ ] Test interface detection logic
+- [x] **Prompt 6: Add Authentication Method Tests**
+  - [x] Create `testAuthenticateWithValidCredentials()` method
+  - [x] Test complete authenticate() flow
+  - [x] Mock successful lookupAccount() and userAuth.authenticate()
+  - [x] Verify correct user ID returned
+  - [x] Create `testAuthenticateWithInvalidCredentials()` method
+  - [x] Test failed authentication scenarios
+  - [x] Verify FALSE returned for invalid credentials
+  - [x] Create `testAuthenticateAccountMethod()` method
+  - [x] Test authenticateAccount() wrapper method
+  - [x] Handle UserAuthenticationInterface and legacy UserAuthInterface
+  - [x] Test interface detection logic
 
 ### Functional Test Foundation
 - [ ] **Prompt 7: Create Basic Functional Test Infrastructure**

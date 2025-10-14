@@ -210,7 +210,10 @@ class AuthDecoratorTest extends UnitTestCase {
     // Expect error message to be displayed via messenger.
     $this->messenger->expects($this->once())
       ->method('addError')
-      ->with($this->stringContains('Login by username has been disabled'));
+      ->with($this->callback(function($message) {
+        return $message instanceof \Drupal\Core\StringTranslation\TranslatableMarkup &&
+               strpos((string) $message, 'Login by username has been disabled') !== FALSE;
+      }));
 
     // Call lookupAccount with username.
     $result = $this->authDecorator->lookupAccount($username);
@@ -362,13 +365,156 @@ class AuthDecoratorTest extends UnitTestCase {
     // Expect error message to be displayed via messenger.
     $this->messenger->expects($this->once())
       ->method('addError')
-      ->with($this->stringContains('The user has not been activated yet or is blocked'));
+      ->with($this->callback(function($message) {
+        return $message instanceof \Drupal\Core\StringTranslation\TranslatableMarkup &&
+               strpos((string) $message, 'The user has not been activated yet or is blocked') !== FALSE;
+      }));
 
     // Call lookupAccount with blocked user email.
     $result = $this->authDecorator->lookupAccount($email);
 
     // Assert FALSE is returned for blocked user.
     $this->assertFalse($result);
+  }
+
+  /**
+   * Test authenticate with valid credentials.
+   */
+  public function testAuthenticateWithValidCredentials() {
+    $email = 'user@example.com';
+    $password = 'validpassword';
+    $user = $this->createMockUser(123, 'testuser', $email, FALSE);
+
+    // Configure mail_login_enabled = TRUE.
+    $this->config->expects($this->any())
+      ->method('get')
+      ->willReturnMap([
+        ['mail_login_enabled', TRUE],
+        ['mail_login_case_sensitive', TRUE],
+        ['mail_login_email_only', FALSE],
+      ]);
+
+    // Mock user storage to return our test user for email lookup.
+    $this->userStorage->expects($this->once())
+      ->method('loadByProperties')
+      ->with(['mail' => $email])
+      ->willReturn([$user]);
+
+    // Mock the original userAuth service to return TRUE for authentication.
+    $this->userAuth->expects($this->once())
+      ->method('authenticate')
+      ->with('testuser', $password)
+      ->willReturn(123);
+
+    // Call authenticate with valid credentials.
+    $result = $this->authDecorator->authenticate($email, $password);
+
+    // Assert correct user ID is returned.
+    $this->assertEquals(123, $result);
+  }
+
+  /**
+   * Test authenticate with invalid credentials.
+   */
+  public function testAuthenticateWithInvalidCredentials() {
+    $email = 'user@example.com';
+    $password = 'wrongpassword';
+    $user = $this->createMockUser(123, 'testuser', $email, FALSE);
+
+    // Configure mail_login_enabled = TRUE.
+    $this->config->expects($this->any())
+      ->method('get')
+      ->willReturnMap([
+        ['mail_login_enabled', TRUE],
+        ['mail_login_case_sensitive', TRUE],
+        ['mail_login_email_only', FALSE],
+      ]);
+
+    // Mock user storage to return our test user for email lookup.
+    $this->userStorage->expects($this->once())
+      ->method('loadByProperties')
+      ->with(['mail' => $email])
+      ->willReturn([$user]);
+
+    // Mock the original userAuth service to return FALSE for authentication.
+    $this->userAuth->expects($this->once())
+      ->method('authenticate')
+      ->with('testuser', $password)
+      ->willReturn(FALSE);
+
+    // Call authenticate with invalid credentials.
+    $result = $this->authDecorator->authenticate($email, $password);
+
+    // Assert FALSE is returned.
+    $this->assertFalse($result);
+  }
+
+  /**
+   * Test authenticateAccount method with UserAuthenticationInterface.
+   */
+  public function testAuthenticateAccountMethod() {
+    $password = 'testpassword';
+    $user = $this->createMockUser(123, 'testuser', 'user@example.com', FALSE);
+
+    // Mock the original userAuth service as UserAuthenticationInterface.
+    $userAuthInterface = $this->createMock(UserAuthenticationInterface::class);
+    $userAuthInterface->expects($this->once())
+      ->method('authenticateAccount')
+      ->with($user, $password)
+      ->willReturn(TRUE);
+
+    // Create AuthDecorator with UserAuthenticationInterface mock.
+    $authDecorator = new AuthDecorator(
+      $userAuthInterface,
+      $this->entityTypeManager,
+      $this->connection,
+      $this->configFactory,
+      $this->messenger
+    );
+
+    // Mock the string translation service.
+    $string_translation = $this->getStringTranslationStub();
+    $authDecorator->setStringTranslation($string_translation);
+
+    // Call authenticateAccount.
+    $result = $authDecorator->authenticateAccount($user, $password);
+
+    // Assert TRUE is returned.
+    $this->assertTrue($result);
+  }
+
+  /**
+   * Test authenticateAccount method with legacy UserAuthInterface.
+   */
+  public function testAuthenticateAccountMethodLegacy() {
+    $password = 'testpassword';
+    $user = $this->createMockUser(123, 'testuser', 'user@example.com', FALSE);
+
+    // Mock the original userAuth service as legacy UserAuthInterface only.
+    $legacyUserAuth = $this->createMock(UserAuthInterface::class);
+    $legacyUserAuth->expects($this->once())
+      ->method('authenticate')
+      ->with('testuser', $password)
+      ->willReturn(123);
+
+    // Create AuthDecorator with legacy UserAuthInterface mock.
+    $authDecorator = new AuthDecorator(
+      $legacyUserAuth,
+      $this->entityTypeManager,
+      $this->connection,
+      $this->configFactory,
+      $this->messenger
+    );
+
+    // Mock the string translation service.
+    $string_translation = $this->getStringTranslationStub();
+    $authDecorator->setStringTranslation($string_translation);
+
+    // Call authenticateAccount.
+    $result = $authDecorator->authenticateAccount($user, $password);
+
+    // Assert TRUE is returned (non-zero user ID converted to boolean).
+    $this->assertTrue($result);
   }
 
   /**
