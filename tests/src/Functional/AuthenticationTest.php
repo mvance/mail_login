@@ -425,15 +425,15 @@ class AuthenticationTest extends BrowserTestBase {
    */
   public static function emailFormatsProvider() {
     return [
-      'standard_format' => ['user@example.com', 'user'],
-      'subdomain' => ['admin@mail.example.com', 'admin'],
-      'with_dots' => ['first.last@example.com', 'firstlast'],
-      'with_plus' => ['user+tag@example.com', 'usertag'],
-      'with_numbers' => ['user123@example.org', 'user123'],
-      'short_domain' => ['test@ex.co', 'testuser'],
-      'international_domain' => ['contact@example.co.uk', 'contact'],
-      'hyphenated_local' => ['user-name@example.com', 'username'],
-      'underscore_local' => ['user_name@example.com', 'user_name'],
+      'standard_format' => ['user@example.com', 'emailuser1'],
+      'subdomain' => ['admin@mail.example.com', 'emailadmin1'],
+      'with_dots' => ['first.last@example.com', 'firstlast1'],
+      'with_plus' => ['user+tag@example.com', 'usertag1'],
+      'with_numbers' => ['user123@example.org', 'user123email'],
+      'short_domain' => ['test@ex.co', 'testuser1'],
+      'international_domain' => ['contact@example.co.uk', 'contact1'],
+      'hyphenated_local' => ['user-name@example.com', 'username1'],
+      'underscore_local' => ['user_name@example.com', 'user_name1'],
     ];
   }
 
