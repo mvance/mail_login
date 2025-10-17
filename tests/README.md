@@ -41,6 +41,69 @@ The test suite covers:
 3. **Test Database**: Separate test database (automatically handled by Drupal testing framework)
 4. **Permissions**: Write access to temporary directories for test execution
 
+### Container-Based Development Environments
+
+**Important**: When using containerized development environments (DDev, Lando, Docker Compose, etc.), these tests are designed to run **inside the container**, not on the host operating system.
+
+#### Why Run Tests Inside Containers?
+
+Modern Drupal development typically uses containers to provide:
+- **Consistent PHP versions** and extensions across all developers
+- **Isolated database environments** with proper permissions and configuration
+- **Complete web server context** required for functional tests
+- **Matching production environment** specifications
+
+#### DDev Usage (Recommended)
+
+If you're using DDev, run all tests from within the container:
+
+```bash
+# Enter the DDev container
+ddev ssh
+
+# Run tests inside the container
+bash web/modules/contrib/mail_login/tests/smoke-test.sh
+bash web/modules/contrib/mail_login/tests/run-tests.sh
+
+# Or execute directly from host
+ddev exec bash web/modules/contrib/mail_login/tests/smoke-test.sh
+```
+
+#### Other Container Environments
+
+For other containerized setups:
+
+```bash
+# Docker Compose
+docker-compose exec web bash web/modules/contrib/mail_login/tests/smoke-test.sh
+
+# Lando
+lando ssh
+bash web/modules/contrib/mail_login/tests/smoke-test.sh
+
+# Generic Docker
+docker exec -it [container_name] bash
+bash web/modules/contrib/mail_login/tests/smoke-test.sh
+```
+
+#### Host OS Limitations
+
+Running tests directly on the host OS (Mac, Windows, Linux) may fail due to:
+- **PHP version mismatches** between host and container
+- **Database connectivity issues** - containers use internal networking
+- **Drupal bootstrap failures** - missing web server context
+- **Missing dependencies** - database clients, PHP extensions
+- **Configuration differences** - settings.php configured for container environment
+
+#### Troubleshooting Container vs Host Issues
+
+If tests pass in containers but fail on host OS:
+1. ✅ **This is expected behavior** - use the container environment
+2. ✅ **Container results are authoritative** - they represent the true test state
+3. ❌ **Don't spend time fixing host OS issues** - containers provide the correct environment
+
+For CI/CD pipelines, ensure tests run in the same containerized environment used for development.
+
 ### Environment Setup
 
 1. **Ensure mail_login module is installed**:
