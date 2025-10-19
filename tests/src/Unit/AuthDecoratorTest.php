@@ -600,16 +600,16 @@ class AuthDecoratorTest extends UnitTestCase {
    */
   public static function emailFormatsProvider() {
     return [
-      'standard_format' => ['user@example.com'],
-      'subdomain' => ['user@mail.example.com'],
-      'with_dots' => ['first.last@example.com'],
-      'with_plus' => ['user+tag@example.com'],
-      'with_numbers' => ['user123@example.org'],
-      'short_domain' => ['user@ex.co'],
-      'long_domain' => ['user@very-long-domain-name.example.com'],
-      'international_domain' => ['user@example.co.uk'],
-      'hyphenated_local' => ['user-name@example.com'],
-      'underscore_local' => ['user_name@example.com'],
+      ['user@example.com'],
+      ['user@mail.example.com'],
+      ['first.last@example.com'],
+      ['user+tag@example.com'],
+      ['user123@example.org'],
+      ['user@ex.co'],
+      ['user@very-long-domain-name.example.com'],
+      ['user@example.co.uk'],
+      ['user-name@example.com'],
+      ['user_name@example.com'],
     ];
   }
 
@@ -621,12 +621,12 @@ class AuthDecoratorTest extends UnitTestCase {
    */
   public static function edgeCaseIdentifiersProvider() {
     return [
-      'null_value' => [NULL],
-      'empty_string' => [''],
-      'whitespace_only' => ['   '],
-      'very_long_email' => [str_repeat('a', 250) . '@example.com'],
-      'unicode_characters' => ['üser@example.com'],
-      'special_characters' => ['user!#$%&@example.com'],
+      [NULL],
+      [''],
+      ['   '],
+      [str_repeat('a', 250) . '@example.com'],
+      ['üser@example.com'],
+      ['user!#$%&@example.com'],
     ];
   }
 

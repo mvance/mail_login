@@ -433,12 +433,12 @@ class AuthenticationTest extends BrowserTestBase {
    */
   public static function emailCaseVariationsProvider() {
     return [
-      'all_lowercase' => ['user@example.com'],
-      'all_uppercase' => ['USER@EXAMPLE.COM'],
-      'mixed_case_1' => ['User@Example.Com'],
-      'mixed_case_2' => ['uSeR@eXaMpLe.CoM'],
-      'domain_uppercase' => ['user@EXAMPLE.COM'],
-      'local_uppercase' => ['USER@example.com'],
+      ['user@example.com'],
+      ['USER@EXAMPLE.COM'],
+      ['User@Example.Com'],
+      ['uSeR@eXaMpLe.CoM'],
+      ['user@EXAMPLE.COM'],
+      ['USER@example.com'],
     ];
   }
 
@@ -450,15 +450,15 @@ class AuthenticationTest extends BrowserTestBase {
    */
   public static function emailFormatsProvider() {
     return [
-      'standard_format' => ['user@example.com', 'emailuser1'],
-      'subdomain' => ['admin@mail.example.com', 'emailadmin1'],
-      'with_dots' => ['first.last@example.com', 'firstlast1'],
-      'with_plus' => ['user+tag@example.com', 'usertag1'],
-      'with_numbers' => ['user123@example.org', 'user123email'],
-      'short_domain' => ['test@ex.co', 'testuser1'],
-      'international_domain' => ['contact@example.co.uk', 'contact1'],
-      'hyphenated_local' => ['user-name@example.com', 'username1'],
-      'underscore_local' => ['user_name@example.com', 'user_name1'],
+      ['user@example.com', 'emailuser1'],
+      ['admin@mail.example.com', 'emailadmin1'],
+      ['first.last@example.com', 'firstlast1'],
+      ['user+tag@example.com', 'usertag1'],
+      ['user123@example.org', 'user123email'],
+      ['test@ex.co', 'testuser1'],
+      ['contact@example.co.uk', 'contact1'],
+      ['user-name@example.com', 'username1'],
+      ['user_name@example.com', 'user_name1'],
     ];
   }
 
@@ -470,14 +470,14 @@ class AuthenticationTest extends BrowserTestBase {
    */
   public static function invalidLoginScenariosProvider() {
     return [
-      'empty_email' => ['', 'password'],
-      'empty_password' => ['user@example.com', ''],
-      'both_empty' => ['', ''],
-      'whitespace_email' => ['   ', 'password'],
-      'whitespace_password' => ['user@example.com', '   '],
-      'invalid_email_format' => ['not-an-email', 'password'],
-      'very_long_email' => [str_repeat('a', 250) . '@example.com', 'password'],
-      'special_characters' => ['user<script>@example.com', 'password'],
+      ['', 'password'],
+      ['user@example.com', ''],
+      ['', ''],
+      ['   ', 'password'],
+      ['user@example.com', '   '],
+      ['not-an-email', 'password'],
+      [str_repeat('a', 250) . '@example.com', 'password'],
+      ['user<script>@example.com', 'password'],
     ];
   }
 
@@ -489,12 +489,12 @@ class AuthenticationTest extends BrowserTestBase {
    */
   public static function passwordComplexityProvider() {
     return [
-      'simple_password' => ['simple123'],
-      'complex_password' => ['C0mpl3x!P@ssw0rd'],
-      'with_spaces' => ['password with spaces'],
-      'special_characters' => ['p@$$w0rd!#$%'],
-      'unicode_characters' => ['pässwörd123'],
-      'very_long_password' => [str_repeat('a', 100)],
+      ['simple123'],
+      ['C0mpl3x!P@ssw0rd'],
+      ['password with spaces'],
+      ['p@$$w0rd!#$%'],
+      ['pässwörd123'],
+      [str_repeat('a', 100)],
     ];
   }
 
