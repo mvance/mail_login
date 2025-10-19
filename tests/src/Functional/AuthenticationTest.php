@@ -176,7 +176,7 @@ class AuthenticationTest extends BrowserTestBase {
   /**
    * Test email-only mode rejects username login.
    */
-  public function testEmailOnlyModeRejectsUsername() {
+  public function testEmailOnlyMode() {
     // Configure mail_login with email-only mode enabled.
     $this->configureMailLoginSettings([
       'mail_login_enabled' => TRUE,
@@ -212,7 +212,7 @@ class AuthenticationTest extends BrowserTestBase {
   /**
    * Test blocked user login failure.
    */
-  public function testBlockedUserLoginFailure() {
+  public function testBlockedUserHandling() {
     // Create a blocked user account.
     $blockedUser = $this->createTestUser('blockeduser', 'blocked@example.com', 'blockedpassword', TRUE);
 
@@ -251,7 +251,7 @@ class AuthenticationTest extends BrowserTestBase {
   /**
    * Test invalid credentials show appropriate error.
    */
-  public function testInvalidCredentialsShowError() {
+  public function testInvalidCredentials() {
     // Configure mail_login to be enabled.
     $this->configureMailLoginSettings([
       'mail_login_enabled' => TRUE,
@@ -569,7 +569,7 @@ class AuthenticationTest extends BrowserTestBase {
    *
    * @dataProvider passwordComplexityProvider
    */
-  public function testPasswordComplexityHandling($password) {
+  public function testPasswordComplexity($password) {
     // Create a user with the complex password.
     $user = $this->createTestUser('complexuser', 'complex@example.com', $password);
 
@@ -802,7 +802,7 @@ class AuthenticationTest extends BrowserTestBase {
   /**
    * Test case-insensitive matching with potential conflicts.
    */
-  public function testCaseInsensitiveConflictHandling() {
+  public function testCaseInsensitiveConflicts() {
     // Create users with potentially conflicting emails.
     $user1 = $this->createTestUser('loweruser', 'conflict@example.com', 'password1');
     $user2 = $this->createTestUser('upperuser', 'CONFLICT@EXAMPLE.COM', 'password2');

@@ -166,7 +166,7 @@ class MailLoginAdminSettingsFormTest extends UnitTestCase {
   /**
    * Test buildForm with different configuration values.
    */
-  public function testBuildFormWithDifferentConfigValues() {
+  public function testFormWithDifferentConfigs() {
     $form = [];
     $form_state = $this->createMock(FormStateInterface::class);
 
@@ -283,7 +283,7 @@ class MailLoginAdminSettingsFormTest extends UnitTestCase {
   /**
    * Test submitForm with minimal configuration values.
    */
-  public function testSubmitFormWithMinimalValues() {
+  public function testSubmitMinimalValues() {
     $form = [];
     $form_state = $this->createMock(FormStateInterface::class);
 
@@ -423,7 +423,7 @@ class MailLoginAdminSettingsFormTest extends UnitTestCase {
    *
    * @dataProvider configurationScenariosProvider
    */
-  public function testBuildFormWithConfigurationScenarios($config_values) {
+  public function testConfigurationScenarios($config_values) {
     $form = [];
     $form_state = $this->createMock(FormStateInterface::class);
 

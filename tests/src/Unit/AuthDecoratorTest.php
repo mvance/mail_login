@@ -312,7 +312,7 @@ class AuthDecoratorTest extends UnitTestCase {
   /**
    * Test lookupAccount with case-insensitive email matching.
    */
-  public function testLookupAccountCaseInsensitive() {
+  public function testCaseInsensitiveConflicts() {
     $email_input = 'USER@EXAMPLE.COM';
     $email_stored = 'user@example.com';
     $user = $this->createMockUser(123, 'testuser', $email_stored, FALSE);
@@ -566,7 +566,7 @@ class AuthDecoratorTest extends UnitTestCase {
    *
    * @dataProvider emailFormatsProvider
    */
-  public function testAuthenticateWithVariousEmailFormats($email) {
+  public function testVariousEmailFormats($email) {
     $password = 'testpassword';
     $user = $this->createMockUser(123, 'testuser', $email, FALSE);
 
@@ -635,7 +635,7 @@ class AuthDecoratorTest extends UnitTestCase {
    *
    * @dataProvider edgeCaseIdentifiersProvider
    */
-  public function testAuthenticateWithEdgeCaseIdentifiers($identifier) {
+  public function testEdgeCaseIdentifiers($identifier) {
     $password = 'testpassword';
 
     // Configure mail_login_enabled = TRUE.
