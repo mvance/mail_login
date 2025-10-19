@@ -610,9 +610,12 @@ class AuthenticationTest extends BrowserTestBase {
   }
 
   /**
-   * Test edge cases for email validation and security.
+   * Test SQL injection prevention in email login.
+   *
+   * This test verifies that SQL injection attempts through the email field
+   * are properly handled and do not cause database errors or security breaches.
    */
-  public function testEmailValidationEdgeCases() {
+  public function testSqlInjectionPrevention() {
     // Configure mail_login to be enabled.
     $this->configureMailLoginSettings([
       'mail_login_enabled' => TRUE,
@@ -620,16 +623,15 @@ class AuthenticationTest extends BrowserTestBase {
       'mail_login_email_only' => TRUE,
     ]);
 
-    $edge_cases = [
-      'sql_injection_attempt' => "admin@example.com'; DROP TABLE users; --",
-      'xss_attempt' => 'admin@example.com<script>alert("xss")</script>',
-      'null_bytes' => "admin@example.com\0",
-      'unicode_normalization' => 'üser@example.com',
-      'punycode_domain' => 'user@xn--nxasmq6b.com',
+    $sql_injection_attempts = [
+      "admin@example.com'; DROP TABLE users; --",
+      "admin@example.com' OR '1'='1",
+      "admin@example.com'; DELETE FROM users WHERE 1=1; --",
+      "admin@example.com' UNION SELECT * FROM users --",
     ];
 
-    foreach ($edge_cases as $case_name => $malicious_input) {
-      // Test that malicious input doesn't cause security issues.
+    foreach ($sql_injection_attempts as $malicious_input) {
+      // Test that SQL injection attempts don't cause security issues.
       $this->drupalGet('/user/login');
 
       $this->submitForm([
@@ -640,17 +642,115 @@ class AuthenticationTest extends BrowserTestBase {
       // Assert login failure and no security breach.
       $this->assertLoginFailure();
 
-      // Verify no JavaScript execution or SQL injection occurred.
+      // Verify no SQL injection occurred.
       $page_text = $this->getSession()->getPage()->getText();
-      $this->assertStringNotContainsString('<script>', $page_text);
       $this->assertStringNotContainsString('DROP TABLE', $page_text);
-      $this->assertStringNotContainsString('alert(', $page_text);
+      $this->assertStringNotContainsString('DELETE FROM', $page_text);
+      $this->assertStringNotContainsString('UNION SELECT', $page_text);
 
       // Verify we're still on a safe page.
       $current_url = $this->getSession()->getCurrentUrl();
       $this->assertTrue(
         strpos($current_url, '/user/login') !== FALSE,
-        "Security test failed for case: $case_name"
+        'SQL injection attempt should not redirect away from login page'
+      );
+    }
+  }
+
+  /**
+   * Test XSS attack prevention in email login.
+   *
+   * This test verifies that XSS attempts through the email field
+   * are properly sanitized and do not execute malicious scripts.
+   */
+  public function testXssPrevention() {
+    // Configure mail_login to be enabled.
+    $this->configureMailLoginSettings([
+      'mail_login_enabled' => TRUE,
+      'mail_login_case_sensitive' => TRUE,
+      'mail_login_email_only' => TRUE,
+    ]);
+
+    $xss_attempts = [
+      'admin@example.com<script>alert("xss")</script>',
+      'admin@example.com<img src=x onerror=alert("xss")>',
+      'admin@example.com<svg onload=alert("xss")>',
+      'admin@example.com<iframe src="javascript:alert(\'xss\')">',
+    ];
+
+    foreach ($xss_attempts as $malicious_input) {
+      // Test that XSS attempts don't cause security issues.
+      $this->drupalGet('/user/login');
+
+      $this->submitForm([
+        'name' => $malicious_input,
+        'pass' => 'anypassword',
+      ], 'Log in');
+
+      // Assert login failure and no security breach.
+      $this->assertLoginFailure();
+
+      // Verify no script execution occurred.
+      $page_text = $this->getSession()->getPage()->getText();
+      $this->assertStringNotContainsString('<script>', $page_text);
+      $this->assertStringNotContainsString('alert(', $page_text);
+      $this->assertStringNotContainsString('onerror=', $page_text);
+      $this->assertStringNotContainsString('onload=', $page_text);
+
+      // Verify we're still on a safe page.
+      $current_url = $this->getSession()->getCurrentUrl();
+      $this->assertTrue(
+        strpos($current_url, '/user/login') !== FALSE,
+        'XSS attempt should not redirect away from login page'
+      );
+    }
+  }
+
+  /**
+   * Test Unicode character handling in email addresses.
+   *
+   * This test verifies that Unicode characters in email addresses
+   * are properly handled and encoded without causing errors.
+   */
+  public function testUnicodeEmailHandling() {
+    // Configure mail_login to be enabled.
+    $this->configureMailLoginSettings([
+      'mail_login_enabled' => TRUE,
+      'mail_login_case_sensitive' => TRUE,
+      'mail_login_email_only' => FALSE,
+    ]);
+
+    $unicode_emails = [
+      'üser@example.com',
+      'user@exämple.com',
+      'tëst@example.com',
+      'user@xn--nxasmq6b.com', // Punycode domain
+      "admin@example.com\0", // Null bytes
+    ];
+
+    foreach ($unicode_emails as $unicode_email) {
+      // Test that Unicode emails are handled properly.
+      $this->drupalGet('/user/login');
+
+      $this->submitForm([
+        'name' => $unicode_email,
+        'pass' => 'anypassword',
+      ], 'Log in');
+
+      // Should fail gracefully (no user exists with these emails).
+      $this->assertLoginFailure();
+
+      // Verify proper encoding and no errors.
+      $page_text = $this->getSession()->getPage()->getText();
+      $this->assertStringNotContainsString('Fatal error', $page_text);
+      $this->assertStringNotContainsString('Warning:', $page_text);
+      $this->assertStringNotContainsString('Notice:', $page_text);
+
+      // Verify we're still on the login page.
+      $current_url = $this->getSession()->getCurrentUrl();
+      $this->assertTrue(
+        strpos($current_url, '/user/login') !== FALSE,
+        'Unicode email handling should not cause page errors'
       );
     }
   }
