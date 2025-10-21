@@ -627,6 +627,20 @@ class AuthDecoratorTest extends UnitTestCase {
       [str_repeat('a', 250) . '@example.com'],
       ['üser@example.com'],
       ['user!#$%&@example.com'],
+      // Enhanced Unicode test cases
+      ['café@example.com'],
+      ['müller@example.de'],
+      ['مستخدم@example.com'], // Arabic script
+      ['משתמש@example.com'], // Hebrew script
+      ['用户@example.com'], // Chinese characters
+      ['тест@example.com'], // Cyrillic script
+      ['user@exämple.com'], // Unicode in domain
+      ['tëst.üser@example.com'], // Mixed Unicode
+      ['user+tëst@example.com'], // Unicode with special chars
+      ['🙂@example.com'], // Emoji (if supported)
+      // Normalized vs non-normalized Unicode forms
+      ['café@example.com'], // NFC form
+      ['cafe\u0301@example.com'], // NFD form (e + combining acute)
     ];
   }
 
