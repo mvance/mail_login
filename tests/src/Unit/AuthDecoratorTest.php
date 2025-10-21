@@ -2,6 +2,7 @@
 
 namespace Drupal\Tests\mail_login\Unit;
 
+use Drupal\Component\Utility\EmailValidatorInterface;
 use Drupal\Core\Config\Config;
 use Drupal\Core\Config\ConfigFactoryInterface;
 use Drupal\Core\Database\Connection;
@@ -77,6 +78,13 @@ class AuthDecoratorTest extends UnitTestCase {
   protected $messenger;
 
   /**
+   * The mocked email validator service.
+   *
+   * @var \Drupal\Component\Utility\EmailValidatorInterface|\PHPUnit\Framework\MockObject\MockObject
+   */
+  protected $emailValidator;
+
+  /**
    * The mocked user storage.
    *
    * @var \Drupal\Core\Entity\EntityStorageInterface|\PHPUnit\Framework\MockObject\MockObject
@@ -109,6 +117,7 @@ class AuthDecoratorTest extends UnitTestCase {
     $this->configFactory = $this->createMock(ConfigFactoryInterface::class);
     $this->config = $this->createMock(Config::class);
     $this->messenger = $this->createMock(MessengerInterface::class);
+    $this->emailValidator = $this->createMock(EmailValidatorInterface::class);
     $this->userStorage = $this->createMock(EntityStorageInterface::class);
 
     // Configure config factory to return our config mock for mail_login.settings.
@@ -129,7 +138,8 @@ class AuthDecoratorTest extends UnitTestCase {
       $this->entityTypeManager,
       $this->connection,
       $this->configFactory,
-      $this->messenger
+      $this->messenger,
+      $this->emailValidator
     );
 
     // Mock the string translation service to avoid container dependency issues.
@@ -170,6 +180,12 @@ class AuthDecoratorTest extends UnitTestCase {
         ['mail_login_email_only', FALSE],    // Allow username fallback
       ]);
 
+    // Mock email validator to return TRUE for valid email.
+    $this->emailValidator->expects($this->once())
+      ->method('isValid')
+      ->with($email)
+      ->willReturn(TRUE);
+
     // Mock user storage to return our test user for the email lookup.
     // This simulates finding a user with the exact email address.
     $this->userStorage->expects($this->once())
@@ -200,8 +216,13 @@ class AuthDecoratorTest extends UnitTestCase {
         ['mail_login_email_only', FALSE],
       ]);
 
-    // Mock user storage to return empty array for email lookup (no email match).
-    // Then return our test user for username lookup.
+    // Mock email validator to return FALSE for username (not an email).
+    $this->emailValidator->expects($this->once())
+      ->method('isValid')
+      ->with($username)
+      ->willReturn(FALSE);
+
+    // Mock user storage to return our test user for username lookup.
     $this->userStorage->expects($this->once())
       ->method('loadByProperties')
       ->with(['name' => $username])
@@ -229,8 +250,12 @@ class AuthDecoratorTest extends UnitTestCase {
         ['mail_login_email_only', TRUE],
       ]);
 
-    // The username 'testuser' is not a valid email, so filter_var() will return FALSE.
-    // This means the code will skip the email lookup and go to the email_only check.
+    // Mock email validator to return FALSE for username (not an email).
+    $this->emailValidator->expects($this->once())
+      ->method('isValid')
+      ->with($username)
+      ->willReturn(FALSE);
+
     // No loadByProperties should be called since it's not a valid email.
     $this->userStorage->expects($this->never())
       ->method('loadByProperties');
@@ -296,6 +321,12 @@ class AuthDecoratorTest extends UnitTestCase {
         ['mail_login_email_only', FALSE],
       ]);
 
+    // Mock email validator to return TRUE for valid email.
+    $this->emailValidator->expects($this->once())
+      ->method('isValid')
+      ->with($email)
+      ->willReturn(TRUE);
+
     // Mock user storage to return our test user for exact email match.
     $this->userStorage->expects($this->once())
       ->method('loadByProperties')
@@ -325,6 +356,12 @@ class AuthDecoratorTest extends UnitTestCase {
         ['mail_login_case_sensitive', FALSE],
         ['mail_login_email_only', FALSE],
       ]);
+
+    // Mock email validator to return TRUE for valid email.
+    $this->emailValidator->expects($this->once())
+      ->method('isValid')
+      ->with($email_input)
+      ->willReturn(TRUE);
 
     // Mock user storage to return empty for exact match, then use database query.
     $this->userStorage->expects($this->once())
@@ -384,6 +421,12 @@ class AuthDecoratorTest extends UnitTestCase {
         ['mail_login_email_only', FALSE],
       ]);
 
+    // Mock email validator to return TRUE for valid email.
+    $this->emailValidator->expects($this->once())
+      ->method('isValid')
+      ->with($email)
+      ->willReturn(TRUE);
+
     // Mock user storage to return our blocked test user.
     $this->userStorage->expects($this->once())
       ->method('loadByProperties')
@@ -422,6 +465,18 @@ class AuthDecoratorTest extends UnitTestCase {
         ['mail_login_email_only', FALSE],
       ]);
 
+    // Mock email validator to return TRUE for valid email.
+    $this->emailValidator->expects($this->once())
+      ->method('isValid')
+      ->with($email)
+      ->willReturn(TRUE);
+
+    // Mock email validator to return TRUE for valid email.
+    $this->emailValidator->expects($this->once())
+      ->method('isValid')
+      ->with($email)
+      ->willReturn(TRUE);
+
     // Mock user storage to return our test user for email lookup.
     $this->userStorage->expects($this->once())
       ->method('loadByProperties')
@@ -458,7 +513,8 @@ class AuthDecoratorTest extends UnitTestCase {
       $this->entityTypeManager,
       $this->connection,
       $this->configFactory,
-      $this->messenger
+      $this->messenger,
+      $this->emailValidator
     );
     
     // Mock the string translation service.
@@ -473,6 +529,12 @@ class AuthDecoratorTest extends UnitTestCase {
         ['mail_login_case_sensitive', TRUE],
         ['mail_login_email_only', FALSE],
       ]);
+
+    // Mock email validator to return TRUE for valid email.
+    $this->emailValidator->expects($this->once())
+      ->method('isValid')
+      ->with($email)
+      ->willReturn(TRUE);
 
     // Mock user storage to return our test user for email lookup.
     $this->userStorage->expects($this->once())
@@ -513,7 +575,8 @@ class AuthDecoratorTest extends UnitTestCase {
       $this->entityTypeManager,
       $this->connection,
       $this->configFactory,
-      $this->messenger
+      $this->messenger,
+      $this->emailValidator
     );
 
     // Mock the string translation service.
@@ -547,7 +610,8 @@ class AuthDecoratorTest extends UnitTestCase {
       $this->entityTypeManager,
       $this->connection,
       $this->configFactory,
-      $this->messenger
+      $this->messenger,
+      $this->emailValidator
     );
 
     // Mock the string translation service.
@@ -578,6 +642,12 @@ class AuthDecoratorTest extends UnitTestCase {
         ['mail_login_case_sensitive', TRUE],
         ['mail_login_email_only', FALSE],
       ]);
+
+    // Mock email validator to return TRUE for valid email.
+    $this->emailValidator->expects($this->once())
+      ->method('isValid')
+      ->with($email)
+      ->willReturn(TRUE);
 
     // Mock user storage to return our test user for email lookup.
     $this->userStorage->expects($this->once())
@@ -663,6 +733,10 @@ class AuthDecoratorTest extends UnitTestCase {
 
     // For edge cases, expect appropriate behavior based on identifier.
     if (empty($identifier)) {
+      // For empty identifiers, email validator is not called due to !empty() check
+      $this->emailValidator->expects($this->never())
+        ->method('isValid');
+      
       $this->userStorage->expects($this->never())
         ->method('loadByProperties');
       
@@ -672,7 +746,14 @@ class AuthDecoratorTest extends UnitTestCase {
         ->with($identifier, $password)
         ->willReturn(FALSE);
     } else {
-      if (filter_var($identifier, FILTER_VALIDATE_EMAIL)) {
+      // Mock email validator based on whether identifier looks like email.
+      $is_email_like = filter_var($identifier, FILTER_VALIDATE_EMAIL) !== FALSE;
+      $this->emailValidator->expects($this->once())
+        ->method('isValid')
+        ->with($identifier)
+        ->willReturn($is_email_like);
+      
+      if ($is_email_like) {
         $this->userStorage->expects($this->once())
           ->method('loadByProperties')
           ->with(['mail' => $identifier])

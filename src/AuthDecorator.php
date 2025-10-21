@@ -2,6 +2,7 @@
 
 namespace Drupal\mail_login;
 
+use Drupal\Component\Utility\EmailValidatorInterface;
 use Drupal\Core\Config\ConfigFactoryInterface;
 use Drupal\Core\Database\Connection;
 use Drupal\Core\DependencyInjection\DependencySerializationTrait;
@@ -55,6 +56,13 @@ class AuthDecorator implements UserAuthInterface, UserAuthenticationInterface {
   protected $messenger;
 
   /**
+   * The email validator service.
+   *
+   * @var \Drupal\Component\Utility\EmailValidatorInterface
+   */
+  protected $emailValidator;
+
+  /**
    * Constructs a UserAuth object.
    *
    * @param \Drupal\user\UserAuthenticationInterface|\Drupal\user\UserAuthInterface $user_auth
@@ -67,6 +75,8 @@ class AuthDecorator implements UserAuthInterface, UserAuthenticationInterface {
    *   The config factory.
    * @param \Drupal\Core\Messenger\MessengerInterface $messenger
    *   The messenger.
+   * @param \Drupal\Component\Utility\EmailValidatorInterface $email_validator
+   *   The email validator service.
    */
   public function __construct(
     UserAuthenticationInterface|UserAuthInterface $user_auth,
@@ -74,6 +84,7 @@ class AuthDecorator implements UserAuthInterface, UserAuthenticationInterface {
     Connection $connection,
     ConfigFactoryInterface $config_factory,
     MessengerInterface $messenger,
+    EmailValidatorInterface $email_validator,
   ) {
 
     $this->userAuth = $user_auth;
@@ -81,6 +92,7 @@ class AuthDecorator implements UserAuthInterface, UserAuthenticationInterface {
     $this->connection = $connection;
     $this->configFactory = $config_factory;
     $this->messenger = $messenger;
+    $this->emailValidator = $email_validator;
   }
 
   /**
@@ -92,7 +104,7 @@ class AuthDecorator implements UserAuthInterface, UserAuthenticationInterface {
 
     // If we have an email lookup the username by email.
     if ($config->get('mail_login_enabled') && !empty($identifier)) {
-      if (filter_var($identifier, FILTER_VALIDATE_EMAIL)) {
+      if ($this->emailValidator->isValid($identifier)) {
         $user_storage = $this->entityTypeManager->getStorage('user');
         $account_search = $user_storage->loadByProperties(['mail' => $identifier]);
         if (!$account_search && !$config->get('mail_login_case_sensitive')) {
