@@ -703,6 +703,179 @@ class AuthDecoratorTest extends UnitTestCase {
 
 
 
+
+  /**
+   * Test lookupAccount with multiple users having the same email.
+   *
+   * This test ensures that if the user storage returns multiple user accounts
+   * for the same email address, the decorator will return the first user from
+   * the list, ensuring predictable behavior even with inconsistent data.
+   */
+  public function testLookupAccountWithMultipleUsersSameEmail() {
+    $email = 'user@example.com';
+    $user1 = $this->createMockUser(123, 'testuser1', $email, FALSE);
+    $user2 = $this->createMockUser(456, 'testuser2', $email, FALSE);
+
+    // Configure mail_login to be enabled.
+    $this->config->expects($this->any())
+      ->method('get')
+      ->willReturnMap([
+        ['mail_login_enabled', TRUE],
+        ['mail_login_case_sensitive', TRUE],
+        ['mail_login_email_only', FALSE],
+      ]);
+
+    // Mock user storage to return multiple users for the same email.
+    $this->userStorage->expects($this->once())
+      ->method('loadByProperties')
+      ->with(['mail' => $email])
+      ->willReturn([$user1, $user2]);
+
+    // Call lookupAccount with the email address.
+    $result = $this->authDecorator->lookupAccount($email);
+
+    // Assert that the first user object is returned.
+    $this->assertSame($user1, $result);
+  }
+
+
+
+  /**
+   * Test authenticate with valid credentials using UserAuthenticationInterface.
+   *
+   * This test covers the scenario where the decorated authentication service
+   * implements UserAuthenticationInterface, and the authentication is successful.
+   */
+  public function testAuthenticateWithValidCredentialsAndUserAuthenticationInterface() {
+    $email = 'user@example.com';
+    $password = 'validpassword';
+    $user = $this->createMockUser(123, 'testuser', $email, FALSE);
+
+    // Create a UserAuthenticationInterface mock.
+    $userAuthInterface = $this->createMock(UserAuthenticationInterface::class);
+
+    // Create a new AuthDecorator instance with the UserAuthenticationInterface mock.
+    $authDecorator = new AuthDecorator(
+      $userAuthInterface,
+      $this->entityTypeManager,
+      $this->connection,
+      $this->configFactory,
+      $this->messenger
+    );
+    $authDecorator->setStringTranslation($this->getStringTranslationStub());
+
+    // Configure mail_login to be enabled.
+    $this->config->expects($this->any())
+      ->method('get')
+      ->willReturnMap([
+        ['mail_login_enabled', TRUE],
+        ['mail_login_case_sensitive', TRUE],
+        ['mail_login_email_only', FALSE],
+      ]);
+
+    // Mock user storage to return the user.
+    $this->userStorage->expects($this->once())
+      ->method('loadByProperties')
+      ->with(['mail' => $email])
+      ->willReturn([$user]);
+
+    // Mock the authenticateAccount method to return TRUE.
+    $userAuthInterface->expects($this->once())
+      ->method('authenticateAccount')
+      ->with($user, $password)
+      ->willReturn(TRUE);
+
+    // Call the authenticate method.
+    $result = $authDecorator->authenticate($email, $password);
+
+    // Assert that the user ID is returned.
+    $this->assertEquals(123, $result);
+  }
+
+
+  /**
+   * Test successful fallback authentication.
+   *
+   * This test covers the scenario where the identifier is not an email, and
+   * the authentication falls back to the original authentication service,
+   * which then succeeds.
+   */
+  public function testSuccessfulFallbackAuthentication() {
+    $username = 'testuser';
+    $password = 'validpassword';
+
+    // Configure mail_login to be enabled.
+    $this->config->expects($this->any())
+      ->method('get')
+      ->willReturnMap([
+        ['mail_login_enabled', TRUE],
+        ['mail_login_case_sensitive', TRUE],
+        ['mail_login_email_only', FALSE],
+      ]);
+
+    // Mock user storage to return no user for username lookup.
+    $this->userStorage->expects($this->once())
+      ->method('loadByProperties')
+      ->with(['name' => $username])
+      ->willReturn([]);
+
+    // Mock the original userAuth service to return a user ID on successful auth.
+    $this->userAuth->expects($this->once())
+      ->method('authenticate')
+      ->with($username, $password)
+      ->willReturn(42);
+
+    // Call authenticate with the username.
+    $result = $this->authDecorator->authenticate($username, $password);
+
+    // Assert that the user ID from the fallback authentication is returned.
+    $this->assertEquals(42, $result);
+  }
+
+  /**
+   * Test case-insensitive lookup with multiple matching users.
+   *
+   * This test ensures that when a case-insensitive search finds multiple
+   * matching users, the decorator returns false to avoid ambiguity.
+   */
+  public function testCaseInsensitiveWithMultipleMatches() {
+    $email_input = 'USER@EXAMPLE.COM';
+
+    // Configure for case-insensitive matching.
+    $this->config->expects($this->any())
+      ->method('get')
+      ->willReturnMap([
+        ['mail_login_enabled', TRUE],
+        ['mail_login_case_sensitive', FALSE],
+        ['mail_login_email_only', FALSE],
+      ]);
+
+    // Mock exact match to return empty, triggering case-insensitive search.
+    $this->userStorage->expects($this->once())
+      ->method('loadByProperties')
+      ->with(['mail' => $email_input])
+      ->willReturn([]);
+
+    // Mock the database query to return UIDs of multiple users.
+    $query = $this->createMock(\Drupal\Core\Entity\Query\QueryInterface::class);
+    $query->expects($this->once())->method('accessCheck')->with(FALSE)->willReturnSelf();
+    $query->expects($this->once())->method('condition')->with('mail', $this->anything(), 'LIKE')->willReturnSelf();
+    $query->expects($this->once())->method('execute')->willReturn([123, 456]);
+
+    $this->userStorage->expects($this->once())->method('getQuery')->willReturn($query);
+
+    // loadMultiple should NOT be called when more than one UID is found.
+    $this->userStorage->expects($this->never())->method('loadMultiple');
+
+    $this->connection->expects($this->once())->method('escapeLike')->with($email_input)->willReturn($email_input);
+
+    // Call lookupAccount.
+    $result = $this->authDecorator->lookupAccount($email_input);
+
+    // Assert that false is returned to avoid ambiguity with multiple matches.
+    $this->assertFalse($result);
+  }
+
   /**
    * Helper method to create a mock user object.
    *
