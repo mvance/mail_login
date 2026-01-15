@@ -1,101 +1,10 @@
-# Mail Login Module - PHPUnit Testing Specification
+# Mail Login Module - Test Specification
 
 ## Overview
 
-This specification defines a phased approach to implementing comprehensive PHPUnit tests for the Drupal mail_login module. The testing will be implemented in three phases: Basic Coverage, Critical Path Coverage, and Comprehensive Coverage.
+This specification documents the comprehensive PHPUnit test suite for the Drupal mail_login module. The test suite provides thorough coverage of email-based authentication functionality through unit tests (isolated component testing) and functional tests (end-to-end browser-based testing).
 
-## Phase 1: Basic Coverage - Authentication Flow Testing
-
-### Scope and Objectives
-
-Phase 1 focuses on testing the core authentication functionality of the mail_login module, specifically the `AuthDecorator` class and complete login flows. This phase establishes the foundation for all subsequent testing phases.
-
-### Test Architecture
-
-#### Test Organization Structure
-- **Unit Tests**: `tests/src/Unit/AuthDecoratorTest.php`
-- **Functional Tests**: `tests/src/Functional/AuthenticationTest.php`
-
-#### Test Types
-- **Unit Tests**: Isolated testing of `AuthDecorator` class methods with fully mocked dependencies
-- **Integration Tests**: End-to-end browser-based testing of complete login flows
-
-### Test Scenarios Coverage
-
-#### Core Authentication Scenarios
-1. **Happy Path Scenarios**
-   - Valid email login with mail_login enabled
-   - Valid username login (fallback behavior)
-   - Successful authentication with correct credentials
-
-2. **Email-Specific Scenarios**
-   - Email login when mail_login is enabled/disabled
-   - Case-sensitive vs case-insensitive email matching
-   - Email-only mode (username login disabled)
-
-3. **Error Handling Scenarios**
-   - Invalid credentials (wrong password)
-   - Blocked/inactive user accounts
-   - Non-existent user accounts
-   - Invalid email format handling
-
-#### Configuration Testing Matrix
-Test the following configuration combinations:
-- `mail_login_enabled`: TRUE/FALSE
-- `mail_login_case_sensitive`: TRUE/FALSE  
-- `mail_login_email_only`: TRUE/FALSE
-
-### Technical Implementation Details
-
-#### Mocking Strategy (Unit Tests)
-- **Full Mocking Approach**: Mock all dependencies for complete isolation
-- **Dependencies to Mock**:
-  - `ConfigFactoryInterface` and `Config` objects
-  - `EntityTypeManagerInterface` and `EntityStorageInterface`
-  - `Connection` (database)
-  - `MessengerInterface`
-  - `UserAuthInterface`
-  - `UserInterface` objects
-
-#### Test Data Strategy
-- **Realistic Test Data**: Use common email formats and typical usernames
-- **Mixed Approach**: 
-  - Simple static users for basic test scenarios
-  - Data providers for testing email format variations and edge cases
-- **Example Test Data**:
-  - Emails: `user@example.com`, `test.user@domain.org`, `admin@site.co.uk`
-  - Usernames: `testuser`, `admin`, `user123`
-  - Passwords: Standard complexity passwords for testing
-
-#### Assertion Strategy
-- **Behavioral Assertions**: Test return values, method calls, and side effects
-- **Error Message Testing**: Partial text matching for robustness
-- **Key Assertions**:
-  - Verify correct user objects are returned
-  - Confirm appropriate error messages are displayed
-  - Validate that correct methods are called on dependencies
-  - Check configuration-dependent behavior changes
-
-#### Performance Considerations
-- **Balanced Approach**:
-  - Unit tests optimized for speed (fast execution, minimal setup)
-  - Functional tests allowed to be more thorough (complete user experience)
-- **Test Isolation**: Each test should be independent and not affect others
-
-### Quality Standards and Completion Criteria
-
-#### Quality Gates for Phase 1 Completion
-1. **Tests Pass Consistently**: No flaky or intermittently failing tests
-2. **Drupal Coding Standards**: Follow Drupal coding conventions and PHPUnit best practices
-3. **Documentation Standards**: 
-   - Clear docblocks for all test methods
-   - Descriptive test method names
-   - Inline comments explaining complex test logic
-4. **Maintainability**: Code structure allows easy extension and modification
-
-#### Documentation Requirements
-- **Inline Documentation**: Comprehensive docblocks and comments within test files
-- **Basic README**: Setup instructions, execution commands, and overview of test coverage
+## Test Architecture
 
 ### File Structure
 
@@ -103,102 +12,190 @@ Test the following configuration combinations:
 tests/
 ├── src/
 │   ├── Unit/
-│   │   └── AuthDecoratorTest.php
+│   │   ├── AuthDecoratorTest.php
+│   │   └── Form/
+│   │       └── MailLoginAdminSettingsFormTest.php
 │   └── Functional/
 │       └── AuthenticationTest.php
-└── README.md
+├── README.md
+├── run-tests.sh
+├── smoke-test.sh
+└── validate-tests.sh
 ```
 
-### Dependencies and Setup
+### Test Types
 
-#### Required Dependencies
-- PHPUnit (via Drupal core)
-- Drupal Test Traits
-- Standard Drupal testing framework
+| Type | Purpose | Speed | Dependencies |
+|------|---------|-------|--------------|
+| **Unit Tests** | Isolated component testing | Fast (<1s per test) | All dependencies mocked |
+| **Functional Tests** | End-to-end user workflows | Slower (several seconds) | Full Drupal bootstrap, real database |
 
-#### Test Execution
-- **Development Phase**: Manual execution via PHPUnit commands
-- **Commands**:
-  ```bash
-  # Run unit tests only
-  ./vendor/bin/phpunit tests/src/Unit/AuthDecoratorTest.php
-  
-  # Run functional tests only  
-  ./vendor/bin/phpunit tests/src/Functional/AuthenticationTest.php
-  
-  # Run all Phase 1 tests
-  ./vendor/bin/phpunit tests/src/Unit/ tests/src/Functional/
-  ```
+## Unit Tests
 
-### Detailed Test Specifications
+### AuthDecoratorTest.php
 
-#### Unit Test Class: AuthDecoratorTest
+Tests the core `AuthDecorator` class which handles email-based authentication logic.
 
-**Test Methods Required**:
-1. `testLookupAccountWithValidEmail()` - Test successful email lookup
-2. `testLookupAccountWithValidUsername()` - Test username fallback
-3. `testLookupAccountWithBlockedUser()` - Test blocked user handling
-4. `testLookupAccountEmailOnlyModeWithUsername()` - Test email-only restriction
-5. `testLookupAccountCaseInsensitive()` - Test case-insensitive email matching
-6. `testLookupAccountCaseSensitive()` - Test case-sensitive email matching
-7. `testLookupAccountMailLoginDisabled()` - Test behavior when mail login disabled
-8. `testAuthenticateWithValidCredentials()` - Test successful authentication
-9. `testAuthenticateWithInvalidCredentials()` - Test failed authentication
-10. `testAuthenticateAccountMethod()` - Test the authenticateAccount wrapper
+| Test Method | Description |
+|-------------|-------------|
+| `testAuthDecoratorInstantiation()` | Verifies decorator implements UserAuthInterface and UserAuthenticationInterface |
+| `testLookupAccountWithValidEmail()` | Tests successful email lookup with matching user |
+| `testLookupAccountWithValidUsername()` | Tests username fallback when email lookup fails |
+| `testLookupAccountEmailOnlyModeWithUsername()` | Verifies email-only mode rejects username login |
+| `testLookupAccountMailLoginDisabled()` | Tests behavior when mail_login_enabled is FALSE |
+| `testLookupAccountCaseSensitive()` | Tests exact-case email matching |
+| `testCaseInsensitiveConflicts()` | Tests case-insensitive email matching with LIKE query |
+| `testLookupAccountWithBlockedUser()` | Verifies blocked users cannot authenticate |
+| `testAuthenticateWithValidCredentials()` | Tests successful authentication returns user ID |
+| `testAuthenticateWithInvalidCredentials()` | Tests failed authentication with wrong password |
+| `testAuthenticateAccountMethod()` | Tests authenticateAccount() with UserAuthenticationInterface |
+| `testAuthenticateAccountMethodLegacy()` | Tests authenticateAccount() with legacy UserAuthInterface |
+| `testVariousEmailFormats()` | Data provider test for different email formats |
+| `testEdgeCaseIdentifiers()` | Data provider test for edge cases (empty, Unicode, long strings) |
+| `testLookupAccountWithMultipleUsersSameEmail()` | Tests handling when multiple users share an email |
+| `testAuthenticateWithValidCredentialsAndUserAuthenticationInterface()` | Tests authentication with modern interface |
+| `testSuccessfulFallbackAuthentication()` | Tests fallback to original auth service |
+| `testCaseInsensitiveWithMultipleMatches()` | Verifies FALSE returned when multiple case-insensitive matches |
 
-#### Functional Test Class: AuthenticationTest
+### Form/MailLoginAdminSettingsFormTest.php
 
-**Test Methods Required**:
-1. `testEmailLoginSuccess()` - Complete email login flow
-2. `testUsernameLoginSuccess()` - Complete username login flow  
-3. `testEmailOnlyModeRejectsUsername()` - Test email-only mode enforcement
-4. `testCaseInsensitiveEmailLogin()` - Test case-insensitive email login
-5. `testBlockedUserLoginFailure()` - Test blocked user cannot login
-6. `testInvalidCredentialsShowError()` - Test error messages for bad credentials
-7. `testMailLoginDisabledFallsBackToUsername()` - Test fallback behavior
+Tests the admin configuration form for mail_login settings.
 
-### Error Handling Strategy
+| Test Method | Description |
+|-------------|-------------|
+| `testGetFormId()` | Verifies form returns correct ID |
+| `testGetEditableConfigNames()` | Verifies correct config names are editable |
+| `testBuildForm()` | Tests form structure with default configuration |
+| `testFormWithDifferentConfigs()` | Tests form reflects non-default configuration values |
+| `testSubmitForm()` | Tests configuration saving on form submission |
+| `testSubmitMinimalValues()` | Tests submission with empty/minimal values |
+| `testConfigurationScenarios()` | Data provider test for all config combinations |
+| `testSubmitFormWithEdgeCaseTextValues()` | Data provider test for edge case text inputs |
+| `testFormValidation()` | Tests form validation with long and malicious input |
+| `testFormValidationWithInvalidData()` | Data provider test for invalid form data scenarios |
+| `testFormSecurityAndValidation()` | Tests XSS and SQL injection handling in form |
+| `testFormConfigurationIntegrity()` | Tests form handles missing configuration gracefully |
+| `testFormBuildingStability()` | Tests form can be built repeatedly without state issues |
 
-#### Error Message Testing
-- **Approach**: Partial text matching for robustness
-- **Key Error Messages to Test**:
-  - "Login by username has been disabled"
-  - "The user has not been activated yet or is blocked"
-  - Authentication failure messages
-- **Implementation**: Use `assertStringContainsString()` for partial matching
+## Functional Tests
 
-#### Exception Handling
-- Test graceful handling of database errors
-- Verify proper fallback behavior when services are unavailable
-- Ensure no sensitive information is leaked in error messages
+### AuthenticationTest.php
 
-### Phase Transition Criteria
+End-to-end browser-based tests for complete login workflows.
 
-Phase 1 is considered complete when:
-1. All specified test methods are implemented and passing
-2. Code follows Drupal coding standards and PHPUnit best practices
-3. Documentation meets the specified requirements (inline docs + basic README)
-4. Tests demonstrate consistent, reliable execution
-5. Quality gates are satisfied
+| Test Method | Description |
+|-------------|-------------|
+| `testEmailLoginSuccess()` | Complete successful login flow using email |
+| `testUsernameLoginSuccess()` | Complete successful login flow using username |
+| `testMailLoginDisabledFallsBackToUsername()` | Tests username works and email fails when disabled |
+| `testEmailOnlyMode()` | Tests username rejected and email accepted in email-only mode |
+| `testBlockedUserHandling()` | Tests blocked users cannot login via email or username |
+| `testInvalidCredentials()` | Tests error messages for wrong password |
+| `testCaseInsensitiveEmailLogin()` | Tests login with various email case variations |
+| `testCaseSensitiveEmailLogin()` | Tests exact-case email matching with multiple users |
+| `testLoginWithVariousEmailFormats()` | Data provider test for different email formats |
+| `testLoginWithInvalidScenarios()` | Data provider test for invalid login attempts |
+| `testPasswordComplexity()` | Data provider test for various password formats |
+| `testSqlInjectionPrevention()` | Tests SQL injection attempts are handled safely |
+| `testXssPrevention()` | Tests XSS attempts are handled safely |
+| `testFunctionalLoginWithUnicodeEmails()` | Data provider test for Unicode email addresses |
+| `testUnicodePasswordHandling()` | Tests authentication with Unicode passwords |
+| `testCaseInsensitiveUnicodeMatching()` | Tests case-insensitive matching with accented characters |
+| `testUnicodeEmailHandling()` | Tests various Unicode email formats handled gracefully |
+| `testBrowserUnicodeRendering()` | Tests Unicode characters render correctly in browser |
+| `testMultipleEmailConflicts()` | Tests handling of 3+ users with case-variant emails |
+| `testConflictResolution()` | Tests system handles ambiguous email matches gracefully |
+| `testConflictErrorMessages()` | Tests appropriate errors shown for conflicting users |
+| `testConflictingScenariosWithProvider()` | Data provider test for various conflict scenarios |
+| `testConflictEdgeCases()` | Tests edge cases like trailing spaces in emails |
+| `testCaseInsensitiveConflicts()` | Tests case-insensitive mode with conflicting users |
 
-### Deliverables
+## Configuration Coverage
 
-#### Complete Test Package Includes
-1. **Test Files**: Both unit and functional test classes
-2. **Documentation**: README with setup and execution instructions
-3. **Setup Instructions**: Any required configuration or dependencies
-4. **Code Quality**: Standards-compliant, well-documented code
+The test suite covers all combinations of mail_login configuration options:
 
-#### README.md Contents
-- Overview of test coverage
-- Setup instructions
-- How to run tests (individual and complete suites)
-- Brief explanation of test organization
-- Prerequisites and dependencies
+| Configuration Key | Values Tested | Coverage |
+|-------------------|---------------|----------|
+| `mail_login_enabled` | TRUE, FALSE | Unit + Functional |
+| `mail_login_case_sensitive` | TRUE, FALSE | Unit + Functional |
+| `mail_login_email_only` | TRUE, FALSE | Unit + Functional |
+| `mail_login_override_login_labels` | TRUE, FALSE | Form tests |
+| Text configuration fields | Empty, normal, edge cases | Form tests |
 
-### Future Phases Preview
+## Security Testing
 
-- **Phase 2 (Critical Path Coverage)**: Security-focused testing, form validation, configuration edge cases
-- **Phase 3 (Comprehensive Coverage)**: Performance testing, accessibility, internationalization, advanced edge cases
+The test suite includes explicit security validation:
 
-This specification provides a complete foundation for implementing robust authentication testing for the mail_login module, ensuring both developer productivity and code quality from the start.
+| Security Concern | Test Coverage |
+|------------------|---------------|
+| SQL Injection | `testSqlInjectionPrevention()`, form validation tests |
+| XSS (Cross-Site Scripting) | `testXssPrevention()`, form validation tests |
+| Sensitive Data Leakage | Assertions verify passwords not displayed in errors |
+| Blocked User Access | `testBlockedUserHandling()`, `testLookupAccountWithBlockedUser()` |
+
+## Technical Implementation
+
+### Mocking Strategy (Unit Tests)
+
+All external dependencies are mocked for complete isolation:
+
+- `ConfigFactoryInterface` and `Config` objects
+- `EntityTypeManagerInterface` and `EntityStorageInterface`
+- `Connection` (database)
+- `MessengerInterface`
+- `UserAuthInterface` / `UserAuthenticationInterface`
+- `UserInterface` objects
+
+### Test Data Strategy
+
+#### Email Formats Tested
+- Standard: `user@example.com`
+- Subdomains: `admin@mail.example.com`
+- Plus addressing: `user+tag@example.com`
+- Dots: `first.last@example.com`
+- International TLDs: `contact@example.co.uk`
+- Unicode: `café@example.com`, `用户@example.com`
+- Edge cases: Very long emails, special characters
+
+#### Password Formats Tested
+- Simple: `simple123`
+- Complex: `C0mpl3x!P@ssw0rd`
+- Spaces: `password with spaces`
+- Unicode: `pässwörd123`, `パスワード`
+
+### Assertion Strategy
+
+- **Behavioral Assertions**: Test return values, method calls, and side effects
+- **Error Message Testing**: Partial text matching for cross-version robustness
+- **Key Assertions**:
+  - Verify correct user objects are returned
+  - Confirm appropriate error messages are displayed
+  - Validate configuration-dependent behavior changes
+
+## Test Execution
+
+For detailed instructions on running tests, including helper scripts, CI/CD integration, and troubleshooting, see **[tests/README.md](tests/README.md)**.
+
+### Quick Reference
+
+```bash
+# Smoke test (quick validation)
+bash tests/smoke-test.sh
+
+# Full test suite
+bash tests/run-tests.sh
+
+# Unit tests only
+./vendor/bin/phpunit -c web/core/phpunit.xml.dist tests/src/Unit/
+
+# Functional tests only
+./vendor/bin/phpunit -c web/core/phpunit.xml.dist tests/src/Functional/
+```
+
+## Quality Standards
+
+- **Test Isolation**: Each test is independent with no cross-test dependencies
+- **Drupal Coding Standards**: All code follows Drupal conventions
+- **Documentation**: Comprehensive docblocks on all test methods
+- **Consistent Results**: Tests pass reliably across multiple runs
+- **Maintainability**: Code structure allows easy extension and modification

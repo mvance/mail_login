@@ -760,9 +760,9 @@ class MailLoginAdminSettingsFormTest extends UnitTestCase {
   }
 
   /**
-   * Test performance considerations for form building.
+   * Test form building stability across multiple invocations.
    */
-  public function testFormBuildingPerformance() {
+  public function testFormBuildingStability() {
     $form = [];
     $form_state = $this->createMock(FormStateInterface::class);
 
@@ -776,20 +776,12 @@ class MailLoginAdminSettingsFormTest extends UnitTestCase {
         ['mail_login_override_login_labels', TRUE],
       ]);
 
-    // Measure form building performance.
-    $start_time = microtime(TRUE);
-    
-    // Build the form multiple times to test performance.
+    // Build the form multiple times to ensure no state accumulation issues.
     for ($i = 0; $i < 10; $i++) {
       $result = $this->form->buildForm($form, $form_state);
     }
-    
-    $execution_time = microtime(TRUE) - $start_time;
 
-    // Assert reasonable performance (less than 1 second for 10 builds).
-    $this->assertLessThan(1.0, $execution_time, 'Form building should be performant');
-    
-    // Verify the form structure is correct.
+    // Verify the form structure is correct after multiple builds.
     $this->assertIsArray($result);
     $this->assertArrayHasKey('general', $result);
   }

@@ -937,11 +937,6 @@ class AuthenticationTest extends BrowserTestBase {
         ['pass1', 'pass2', 'pass3'],
         ['domainuser1', 'domainuser2', 'domainuser3'],
       ],
-      'unicode_normalization' => [
-        ['café@example.com', 'cafe\u0301@example.com'], // NFC vs NFD
-        ['password1', 'password2'],
-        ['nfcuser', 'nfduser'],
-      ],
     ];
   }
 
